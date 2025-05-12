@@ -50,7 +50,6 @@ fun init(ctx: &mut TxContext){
         cultivator: table::new(ctx),
         hoh_burn: 0,
     };
-
    transfer::share_object(pool);
    transfer::share_object(seed);
 }
