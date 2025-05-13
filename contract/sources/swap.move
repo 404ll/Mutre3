@@ -13,7 +13,6 @@ use contract::hoh::{HOH,HOHTreasuryCap,hoh_mint,hoh_burn,AdminCap};
 // === Errors ===
 const EInvaildAmount: u64 = 0;
 const EInsufficientBalance: u64 = 1;
-const EUSERAlreadyExists: u64 = 2;
 
 // === Constants ===
 const SUI_DECIMALS: u64 = 1_000_000_000;
@@ -50,6 +49,7 @@ fun init(ctx: &mut TxContext){
         cultivator: table::new(ctx),
         hoh_burn: 0,
     };
+
    transfer::share_object(pool);
    transfer::share_object(seed);
 }
