@@ -1,5 +1,5 @@
 import { isValidSuiAddress } from "@mysten/sui/utils";
-import { createBetterTxFactory, suiClient } from "./index";
+import { createBetterTxFactory,networkConfig, suiClient } from "./index";
 import { SuiObjectResponse } from "@mysten/sui/client";
 import { categorizeSuiObjects, CategorizedObjects } from "@/utils/assetsHelpers";
 
@@ -36,6 +36,14 @@ export const getUserProfile = async (address: string): Promise<CategorizedObject
 //   pool: &mut Pool,
 //   ctx: &mut TxContext
 // )
-export const swap_HoH = createBetterTxFactory<{pool: string}>({
-
-})
+export const swap_HoH = createBetterTxFactory<{amount:number}>((tx, networkVariables, {amount }) => { 
+  const splitResult = tx.splitCoins(tx.gas, [tx.pure.u64(amount)]);
+  tx.moveCall({
+    package:  networkVariables.Package,
+    module: "swap",
+    function: "swap_sui_to_hoh",
+    arguments: [tx.object(networkVariables.HohTreasury),tx.object(splitResult),tx.pure.u64(amount),tx.object(networkVariables.Pool)],
+    typeArguments: ["0x2::sui::SUI"],
+  });
+  return tx;
+});
