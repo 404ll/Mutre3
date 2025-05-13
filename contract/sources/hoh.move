@@ -33,10 +33,6 @@ public struct HOHTreasuryCap has key, store {
 }
 
 // =======EVENT==========
-public struct WateringEvent has copy, drop {
-    owner: address,
-    amount: u64,
-}
 
 // =======FUNCTIONS=========
 fun init(otw: HOH, ctx: &mut TxContext) {
@@ -77,4 +73,10 @@ public fun hoh_burn(treasury: &mut HOHTreasuryCap, payment: Coin<HOH>) {
     let payment_balance = coin::into_balance(payment);
     //销毁代币-减少供应量
     balance::decrease_supply(&mut treasury.supply, payment_balance);
+}
+
+
+#[test_only]
+public fun init_testing(ctx: &mut TxContext) {
+    init(HOH {}, ctx);
 }

@@ -1,5 +1,5 @@
 import { isValidSuiAddress } from "@mysten/sui/utils";
-import { suiClient } from "./index";
+import { createBetterTxFactory, suiClient } from "./index";
 import { SuiObjectResponse } from "@mysten/sui/client";
 import { categorizeSuiObjects, CategorizedObjects } from "@/utils/assetsHelpers";
 
@@ -28,3 +28,14 @@ export const getUserProfile = async (address: string): Promise<CategorizedObject
 
   return categorizeSuiObjects(allObjects);
 };
+
+// public fun swap_sui_to_hoh(
+//   treasurycap: &mut HOHTreasuryCap,
+//   payment: Coin<SUI>,
+//   amount: u64,
+//   pool: &mut Pool,
+//   ctx: &mut TxContext
+// )
+export const swap_HoH = createBetterTxFactory<{pool: string}>({
+
+})

@@ -56,45 +56,52 @@ fun init(ctx: &mut TxContext){
 
 public fun swap_sui_to_hoh(
     treasurycap: &mut HOHTreasuryCap,
-    payment: Coin<SUI>,
+    payment: &mut Coin<SUI>,
+    amount: u64,
     pool: &mut Pool,
     ctx: &mut TxContext
-) {
+) :u64 {
     
-    let payment_amount = coin::value(&payment);
-    assert!(payment_amount > 0, EInvaildAmount);
+    let payment_amount = coin::value(payment);
+    assert!(payment_amount > amount, EInvaildAmount);
+    let payment_coin = coin::split(payment, amount, ctx);
 
     //添加池子
-    let payment_balance = coin::into_balance(payment);
+    let payment_balance = coin::into_balance(payment_coin);
     balance::join(&mut pool.sui_balance, payment_balance);
 
     //转账到用户
-    let hoh_amount = payment_amount * EXCHANGE_RATE / SUI_DECIMALS;
+    let hoh_amount = amount  * EXCHANGE_RATE / SUI_DECIMALS;
     let hoh_coin = hoh_mint(
         treasurycap,
         hoh_amount,
         ctx,
     );
     transfer::public_transfer(hoh_coin, ctx.sender());
+    hoh_amount
 } 
 
 public fun swap_hoh_to_sui(
     treasury: &mut HOHTreasuryCap,
-    payment: Coin<HOH>,
+    payment: &mut Coin<HOH>,
+    amount: u64,
     pool: &mut Pool,
     ctx: &mut TxContext
-) {
+) :u64 {
     let recipient = ctx.sender();
-    let payment_amount = coin::value(&payment);
+    let payment_amount = coin::value(payment);
     assert!(payment_amount > 0, EInvaildAmount);
     //销毁代币
-    hoh_burn(treasury, payment);
+    let hoh_amount = coin::split(payment, amount, ctx);
+    hoh_burn(treasury, hoh_amount);
     
-    let sui_amount = payment_amount * SUI_DECIMALS / EXCHANGE_RATE;
+    let sui_amount = amount * SUI_DECIMALS / EXCHANGE_RATE;
+
     assert!(sui_amount <= balance::value(&pool.sui_balance), EInsufficientBalance);
     //从池子中扣除
     let sui_coin = coin::from_balance(balance::split(&mut pool.sui_balance, sui_amount), ctx);
     transfer::public_transfer(sui_coin, recipient);
+    sui_amount
 }
 
 public fun watering (
@@ -133,8 +140,14 @@ public fun withdraw(
     let sui_coin = coin::from_balance(balance::split(&mut pool.sui_balance, amount), ctx);
     transfer::public_transfer(sui_coin, ctx.sender());
 }
+
+
 // === Package Functions ===
 
 // === Private Functions ===
 
 // === Test Functions ===
+#[test_only]
+public fun init_testing(ctx: &mut TxContext) {
+    init(ctx);
+}
