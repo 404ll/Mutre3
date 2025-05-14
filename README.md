@@ -1,6 +1,6 @@
 
 
-# **[The Last Seed](https://github.com/your-repo-link) 🌱** | [[中文]](https://github.com/404ll/Mutre3/edit/main/README_CN.md)
+# **[The Last Seed](https://github.com/your-repo-link) 🌱** | [中文](https://github.com/404ll/Mutre3/edit/main/README_CN.md)
 
 ## **Background**  
 
