@@ -59,12 +59,11 @@ public fun swap_sui_to_hoh(
     payment: Coin<SUI>,
     pool: &mut Pool,
     ctx: &mut TxContext
-) :u64 {
+) {
     
     let payment_amount = coin::value(&payment);
     assert!(payment_amount > 0, EInvaildAmount);
    
-
     //添加池子
     let payment_balance = coin::into_balance(payment);
     balance::join(&mut pool.sui_balance, payment_balance);
@@ -77,7 +76,6 @@ public fun swap_sui_to_hoh(
         ctx,
     );
     transfer::public_transfer(hoh_coin, ctx.sender());
-    hoh_amount
 } 
 
 public fun swap_hoh_to_sui(
@@ -85,7 +83,7 @@ public fun swap_hoh_to_sui(
     payment: Coin<HOH>,
     pool: &mut Pool,
     ctx: &mut TxContext
-) :u64 {
+) {
     let recipient = ctx.sender();
     let payment_amount = coin::value(&payment);
     assert!(payment_amount > 0, EInvaildAmount);
@@ -97,7 +95,7 @@ public fun swap_hoh_to_sui(
     //从池子中扣除
     let sui_coin = coin::from_balance(balance::split(&mut pool.sui_balance, sui_amount), ctx);
     transfer::public_transfer(sui_coin, recipient);
-    sui_amount
+   
 }
 
 public fun watering (
@@ -112,7 +110,7 @@ public fun watering (
 
     //在种子中放入育化者的名字
     let cultivator = ctx.sender();
-    if(table::contains(&seed.cultivator, cultivator)){
+    if(!table::contains(&seed.cultivator, cultivator)){
         table::add (&mut seed.cultivator, cultivator, payment_amount);
     };
     seed.hoh_burn = payment_amount + seed.hoh_burn;

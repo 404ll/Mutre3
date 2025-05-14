@@ -60,14 +60,14 @@ fun init(otw: HOH, ctx: &mut TxContext) {
     transfer::public_freeze_object(metadata);
 }
 
-public fun hoh_mint( treasury: &mut HOHTreasuryCap,amount: u64,ctx: &mut TxContext): Coin<HOH> {
+public(package) fun hoh_mint( treasury: &mut HOHTreasuryCap,amount: u64,ctx: &mut TxContext): Coin<HOH> {
         coin::from_balance(
             balance::increase_supply(&mut treasury.supply, amount),
             ctx
         )
     }
 
-public fun hoh_burn(treasury: &mut HOHTreasuryCap, payment: Coin<HOH>) {
+public(package) fun hoh_burn(treasury: &mut HOHTreasuryCap, payment: Coin<HOH>) {
     let payment_amount = coin::value(&payment);
     assert!(payment_amount > 0, EWrongAmount);
     let payment_balance = coin::into_balance(payment);

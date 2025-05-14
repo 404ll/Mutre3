@@ -32,18 +32,18 @@ export const getUserProfile = async (address: string): Promise<CategorizedObject
 // public fun swap_sui_to_hoh(
 //   treasurycap: &mut HOHTreasuryCap,
 //   payment: Coin<SUI>,
-//   amount: u64,
 //   pool: &mut Pool,
 //   ctx: &mut TxContext
 // )
-export const swap_HoH = createBetterTxFactory<{amount:number}>((tx, networkVariables, {amount }) => { 
+export const swap_HoH = createBetterTxFactory<{amount:number}>((tx, networkVariables, {amount }) => {
+   
   const splitResult = tx.splitCoins(tx.gas, [tx.pure.u64(amount)]);
+  console.log("splitResult", splitResult.values);
   tx.moveCall({
     package:  networkVariables.Package,
     module: "swap",
     function: "swap_sui_to_hoh",
-    arguments: [tx.object(networkVariables.HohTreasury),tx.object(splitResult),tx.pure.u64(amount),tx.object(networkVariables.Pool)],
-    typeArguments: ["0x2::sui::SUI"],
+    arguments: [tx.object(networkVariables.HohTreasury),tx.object(splitResult),tx.object(networkVariables.Pool)],
   });
   return tx;
 });
