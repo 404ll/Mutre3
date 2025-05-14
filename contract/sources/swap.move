@@ -56,22 +56,21 @@ fun init(ctx: &mut TxContext){
 
 public fun swap_sui_to_hoh(
     treasurycap: &mut HOHTreasuryCap,
-    payment: &mut Coin<SUI>,
-    amount: u64,
+    payment: Coin<SUI>,
     pool: &mut Pool,
     ctx: &mut TxContext
 ) :u64 {
     
-    let payment_amount = coin::value(payment);
-    assert!(payment_amount > amount, EInvaildAmount);
-    let payment_coin = coin::split(payment, amount, ctx);
+    let payment_amount = coin::value(&payment);
+    assert!(payment_amount > 0, EInvaildAmount);
+   
 
     //添加池子
-    let payment_balance = coin::into_balance(payment_coin);
+    let payment_balance = coin::into_balance(payment);
     balance::join(&mut pool.sui_balance, payment_balance);
 
     //转账到用户
-    let hoh_amount = amount  * EXCHANGE_RATE / SUI_DECIMALS;
+    let hoh_amount = payment_amount  * EXCHANGE_RATE / SUI_DECIMALS;
     let hoh_coin = hoh_mint(
         treasurycap,
         hoh_amount,
@@ -83,20 +82,17 @@ public fun swap_sui_to_hoh(
 
 public fun swap_hoh_to_sui(
     treasury: &mut HOHTreasuryCap,
-    payment: &mut Coin<HOH>,
-    amount: u64,
+    payment: Coin<HOH>,
     pool: &mut Pool,
     ctx: &mut TxContext
 ) :u64 {
     let recipient = ctx.sender();
-    let payment_amount = coin::value(payment);
+    let payment_amount = coin::value(&payment);
     assert!(payment_amount > 0, EInvaildAmount);
     //销毁代币
-    let hoh_amount = coin::split(payment, amount, ctx);
-    hoh_burn(treasury, hoh_amount);
+    hoh_burn(treasury, payment);
     
-    let sui_amount = amount * SUI_DECIMALS / EXCHANGE_RATE;
-
+    let sui_amount = payment_amount * SUI_DECIMALS / EXCHANGE_RATE;
     assert!(sui_amount <= balance::value(&pool.sui_balance), EInsufficientBalance);
     //从池子中扣除
     let sui_coin = coin::from_balance(balance::split(&mut pool.sui_balance, sui_amount), ctx);
