@@ -1,9 +1,9 @@
-# 最后的种子 🌱 ｜ [English](https://github.com/404ll/Mutre3/edit/main/README.md)
+# 最后的种子 🌱 ｜ [English](https://github.com/404ll/Mutre3/blob/main/README.md)
 
 ## 背景设定  
 
 💻当世界计算机崩坏，数字黄金枯竭，人类陷入算力寒冬......  
-在区块链的终末纪元，**[Sui链](https://sui.io/)**成为了最后的"纯净水源"——凭借其低Gas费和高吞吐的特性未被污染，成为唯一能承载生命数据的公链。  
+在区块链的终末纪元，[Sui链](https://sui.io/)成为了最后的"纯净水源"——凭借其低Gas费和高吞吐的特性未被污染，成为唯一能承载生命数据的公链。  
 
 传说中，创世钱包里封存着两件圣物：  
 - 一滴原初的**Sui（创世之滴）** 💧 
