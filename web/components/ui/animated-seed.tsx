@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
+import Image from "next/image"
 
 interface AnimatedSeedProps {
   progress: number
-  state: string
 }
 
-export const AnimatedSeed = ({ progress, state }: AnimatedSeedProps) => {
+export const AnimatedSeed = ({ progress}: AnimatedSeedProps) => {
   const [scale, setScale] = useState(1)
 
   // 随机轻微缩放效果，模拟呼吸
@@ -39,24 +39,25 @@ export const AnimatedSeed = ({ progress, state }: AnimatedSeedProps) => {
   const showLeaf = progress > 50
   const showFlower = progress > 75
 
-  // 水滴动画
-  const waterDrops = Array(3)
+  // Sui Logo水滴动画
+  const suiDrops = Array(3)
     .fill(0)
     .map((_, i) => (
       <motion.div
         key={i}
-        className="absolute rounded-full bg-blue-400"
+        className="absolute"
         style={{
-          width: 6 + i * 2,
-          height: 10 + i * 3,
+          width: 20 + i * 4,
+          height: 20 + i * 4,
           left: `${40 + i * 20}%`,
-          top: "-20px",
+          top: "-30px",
           opacity: 0,
         }}
         animate={{
           y: [0, 100],
-          opacity: [0, 0.7, 0],
+          opacity: [0, 0.9, 0],
           scale: [1, 0.8],
+          rotate: [0, 10, -10, 0],
         }}
         transition={{
           duration: 2,
@@ -65,7 +66,15 @@ export const AnimatedSeed = ({ progress, state }: AnimatedSeedProps) => {
           delay: i * 0.8,
           ease: "easeInOut",
         }}
-      />
+      >
+        <Image
+          src="/logo/sui-logo.jpg"
+          alt="Sui Logo"
+          width={60 + i * 4}
+          height={60 + i * 4}
+          className="w-full h-full object-contain"
+        />
+      </motion.div>
     ))
 
   // 光芒效果
@@ -110,9 +119,8 @@ export const AnimatedSeed = ({ progress, state }: AnimatedSeedProps) => {
       {/* 土壤 */}
       <div className="absolute bottom-0 w-full h-16 bg-gradient-to-t from-amber-800 to-amber-700 rounded-t-full opacity-70" />
 
-      {/* 水滴效果 */}
-      {waterDrops}
-
+      {/* Sui Logo水滴效果 */}
+      {suiDrops}
       {/* 光芒效果 */}
       {rays}
 
@@ -276,19 +284,6 @@ export const AnimatedSeed = ({ progress, state }: AnimatedSeedProps) => {
               </div>
             </motion.div>
           )}
-        </motion.div>
-
-        {/* 状态文本 */}
-        <motion.div
-          className="absolute top-full left-1/2 mt-4 text-center"
-          style={{ transform: "translateX(-50%)" }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          <span className="px-3 py-1 rounded-full bg-white/80 backdrop-blur-sm text-sm font-medium text-green-700 shadow-sm border border-green-100">
-            {state}
-          </span>
         </motion.div>
       </div>
     </div>

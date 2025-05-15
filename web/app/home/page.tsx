@@ -1,145 +1,47 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Leaf, Trophy, Flame, Sparkles, Zap, RefreshCw, Droplets } from "lucide-react"
+import { Leaf, Flame, Sparkles,  RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Avatar } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
-import { useInView } from "react-intersection-observer"
 import confetti from "canvas-confetti"
-import { AnimatedSeed } from "@/components/ui/animated-seed" 
-
+import { AnimatedSeed } from "@/components/ui/animated-seed"
+import Image from "next/image"
+import { ConnectButton } from "@mysten/dapp-kit"
+import { StarBackground } from "@/components/ui/star-background"
 // 模拟排行榜数据
 const leaderboardData = [
-  { id: 1, address: "0x8f7d...e5a2", tokens: 15420, growth: 12 },
-  { id: 2, address: "0x3a9c...b7f1", tokens: 12350, growth: 8 },
-  { id: 3, address: "0x6e2b...9d4c", tokens: 9870, growth: 15 },
-  { id: 4, address: "0x1f5e...c3d8", tokens: 8540, growth: 5 },
-  { id: 5, address: "0x7a2d...f6e9", tokens: 7650, growth: 10 },
+  { id: 1, address: "0x8f7d...e5a2", tokens: 15420 },
+  { id: 2, address: "0x3a9c...b7f1", tokens: 12350},
+  { id: 3, address: "0x6e2b...9d4c", tokens: 9870},
+  { id: 4, address: "0x1f5e...c3d8", tokens: 8540},
+  { id: 5, address: "0x7a2d...f6e9", tokens: 7650},
 ]
 
-// 粒子效果组件
-const ParticleBackground = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-
-    const particles: {
-      x: number
-      y: number
-      size: number
-      speedX: number
-      speedY: number
-      color: string
-    }[] = []
-
-    const createParticle = () => {
-      const colors = ["#bbf7d0", "#86efac", "#4ade80", "#22c55e"]
-      return {
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: Math.random() * 5 + 1,
-        speedX: Math.random() * 1 - 0.5,
-        speedY: Math.random() * 1 - 0.5,
-        color: colors[Math.floor(Math.random() * colors.length)],
-      }
-    }
-
-    // 初始化粒子
-    for (let i = 0; i < 50; i++) {
-      particles.push(createParticle())
-    }
-
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-      particles.forEach((particle, index) => {
-        particle.x += particle.speedX
-        particle.y += particle.speedY
-
-        // 边界检查
-        if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1
-        if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1
-
-        // 绘制粒子
-        ctx.beginPath()
-        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2)
-        ctx.fillStyle = particle.color
-        ctx.globalAlpha = 0.3
-        ctx.fill()
-      })
-
-      requestAnimationFrame(animate)
-    }
-
-    animate()
-
-    const handleResize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-    }
-
-    window.addEventListener("resize", handleResize)
-
-    return () => {
-      window.removeEventListener("resize", handleResize)
-    }
-  }, [])
-
-  return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full pointer-events-none z-0" />
-}
-
-// 排行榜项组件
+// 排行榜项组件 - 移除动画效果
 const LeaderboardItem = ({
   item,
   index,
-  delay,
 }: {
   item: (typeof leaderboardData)[0]
   index: number
-  delay: number
 }) => {
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  })
-
   const getRankColor = (rank: number) => {
     if (rank === 0) return "bg-yellow-500"
-    if (rank === 1) return "bg-gray-300"
+    if (rank === 1) return "bg-gray-400"
     if (rank === 2) return "bg-amber-600"
-    return "bg-green-600"
-  }
-
-  const getGrowthColor = (growth: number) => {
-    if (growth > 10) return "text-red-500"
-    if (growth > 5) return "text-orange-500"
-    return "text-yellow-500"
+    return "bg-blue-600"
   }
 
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 20 }}
-      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-      transition={{ duration: 0.5, delay: delay }}
-      className="relative"
-    >
+    <div className="relative">
       <div
         className={`
         flex items-center p-4 rounded-lg mb-3
-        ${index < 3 ? "bg-gradient-to-r from-green-50 to-green-100 border border-green-200" : "bg-white border border-gray-100"}
+        ${index < 3 ? "bg-gradient-to-r from-blue-900/50 to-green-900/50 border border-blue-500/30 neon-border" : "glass-effect border border-blue-500/20"}
         hover:shadow-md transition-all duration-300 hover:scale-[1.02] group
       `}
       >
@@ -152,45 +54,34 @@ const LeaderboardItem = ({
           {index + 1}
         </div>
 
-        <Avatar className="h-10 w-10 border-2 border-green-200 mr-4">
-          <div className="flex items-center justify-center w-full h-full bg-green-100 text-green-800 text-xs">
+        <Avatar className="h-10 w-10 border-2 border-blue-500/30 mr-4">
+          <div className="flex items-center justify-center w-full h-full bg-blue-900/50 text-blue-300 text-xs">
             {item.address.substring(0, 2)}
           </div>
         </Avatar>
 
         <div className="flex-1">
           <div className="flex items-center">
-            <span className="font-medium text-gray-800">{item.address}</span>
+            <span className="font-medium text-blue-100">{item.address}</span>
             {index < 3 && (
-              <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 border-green-200">
+              <Badge variant="outline" className="ml-2 bg-blue-900/50 text-blue-300 border-blue-500/30">
                 Top {index + 1}
               </Badge>
             )}
           </div>
-          <div className="text-sm text-gray-500 mt-1">
-            育化进度: {item.growth}%
-            <span className={`ml-2 ${getGrowthColor(item.growth)} inline-flex items-center`}>
-              <Flame className="w-3 h-3 mr-1" />
-              {item.growth > 10 ? "高速生长" : item.growth > 5 ? "稳定生长" : "缓慢生长"}
-            </span>
-          </div>
         </div>
 
         <div className="text-right">
-          <div className="text-lg font-bold text-green-700">{item.tokens.toLocaleString()}</div>
-          <div className="text-xs text-gray-500">代币销毁量</div>
+          <div className="text-lg font-bold text-blue-300 neon-text">{item.tokens.toLocaleString()}</div>
+          <div className="text-xs text-gray-400">Burn Amount</div>
         </div>
 
-        <motion.div
-          className="absolute -right-1 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: [0.8, 1.2, 1], opacity: [0, 1, 0.8] }}
-          transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
-        >
-          <Sparkles className="w-5 h-5 text-green-500" />
-        </motion.div>
+        {/* 静态星星图标，仅在悬停时显示 */}
+        <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <Sparkles className="w-5 h-5 text-blue-400" />
+        </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -245,7 +136,7 @@ export default function CombinedPage() {
         particleCount: 100,
         spread: 70,
         origin: { x: x / window.innerWidth, y: y / window.innerHeight },
-        colors: ["#22c55e", "#4ade80", "#86efac", "#bbf7d0"],
+        colors: ["#3b82f6", "#60a5fa", "#93c5fd", "#22c55e"],
       })
 
       const timer = setTimeout(() => {
@@ -274,213 +165,179 @@ export default function CombinedPage() {
     }, 2000)
   }
 
-  // 滚动到排行榜
-  const scrollToLeaderboard = () => {
-    leaderboardRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 flex flex-col relative overflow-hidden">
-      <ParticleBackground />
-
-      {/* 导航栏 */}
-      <header className="border-b border-green-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+    <div className="min-h-screen flex flex-col">
+        <StarBackground />
+      {/* 导航栏 - 更浅的颜色 */}
+      <header className="border-b border-blue-100/30 glass-effect fixed top-0 left-0 right-0 w-full z-50 backdrop-blur-sm bg-white">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <motion.div
-                className="w-10 h-10 rounded-full bg-white border border-green-200 flex items-center justify-center"
-                whileHover={{ rotate: 360 }}
-                transition={{ duration: 1 }}
-              >
-                <Leaf className="w-5 h-5 text-green-500" />
-              </motion.div>
+            <div className="flex items-center overflow-hidden">
+              <div className="w-20 h-20 relative">
+                <Image 
+                  src="/logo1.png" 
+                  alt="Sui Logo" 
+                  fill
+                  style={{ objectFit: "cover", objectPosition: "center" }}
+                />
+              </div>
             </div>
 
             <nav className="flex items-center space-x-2">
               <Button
                 variant="outline"
-                className="border-green-200 hover:bg-green-50 hover:text-green-700 transition-all duration-300"
+                className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300"
               >
                 mint
               </Button>
               <Button
                 variant="outline"
-                className="border-green-200 hover:bg-green-50 hover:text-green-700 transition-all duration-300"
+                className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300"
               >
                 swap
               </Button>
-              <Button
-                variant="outline"
-                className="border-green-200 hover:bg-green-50 hover:text-green-700 transition-all duration-300"
-                onClick={handleWatering}
-                disabled={isWatering || progress >= 100}
-              >
-                {isWatering ? (
-                  <>
-                    <span className="animate-pulse">浇水中...</span>
-                  </>
-                ) : (
-                  <>watering</>
-                )}
-              </Button>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="outline"
-                  className="border-green-200 hover:bg-green-50 hover:text-green-700 ml-2 transition-all duration-300"
-                >
-                  连接钱包
-                </Button>
-              </motion.div>
+              <ConnectButton 
+              />
             </nav>
           </div>
         </div>
       </header>
 
+      {/* 添加占位元素，防止内容被固定导航栏覆盖 */}
+      <div className="h-[62px]"></div>
+      
       {/* 主要内容 - 上半部分：种子故事 */}
       <main className="flex-1 flex flex-col">
-        <section className="py-16 container mx-auto px-4 max-w-4xl relative z-1">
+
+        <section className="py-16 container mx-auto px-8">
           {/* 主标题 */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-10"
-          >
-            <div className="inline-block relative">
-              <h1 className="text-4xl font-bold text-green-800 mb-2 relative z-10">The Last of Seed</h1>
-              <motion.div
-                className="absolute -bottom-2 left-0 right-0 h-3 bg-green-200 opacity-50 z-0"
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 1, delay: 0.5 }}
-              />
+          <div className="text-center mb-10 mt-8">
+            {/* 移除 motion.div，改用静态元素 */}
+            <div className="inline-block relative mb-4">
+              <h1 className="text-6xl font-bold text-blue-300 mb-2 neon-text">
+                The Last of Seed
+              </h1>
+              {/* 添加装饰线 */}
+              <div className=" mb-2 mt-2 left-0 right-0 h-4 bg-blue-500/30"></div>
             </div>
-            <p className="text-lg text-gray-700 max-w-2xl mx-auto mt-4">
+            
+            {/* 确保文本可见 */}
+            <p className="text-xl text-bule max-w-4xl mx-auto mt-4 relative z-10">
               In the computational winter of the final epoch,
-              <br />
               you are the prophesied Cultivator
             </p>
-          </motion.div>
+          </div>
 
-          {/* 种子动画卡片 */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <Card className="border-green-200 bg-white/80 backdrop-blur-sm shadow-lg mb-8 overflow-hidden hover:shadow-xl transition-all duration-300">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl text-green-800 flex items-center">
-                  <Leaf className="w-5 h-5 mr-2 text-green-600" />
-                  种子发芽进度
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {/* 动态种子图案 */}
-                <AnimatedSeed progress={progress} state={seedState} />
-
-                {/* 进度条 */}
-                <div className="mt-4">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium text-green-700">发芽进度</span>
-                    <span className="text-sm font-medium text-green-700">{Math.floor(progress)}%</span>
+          {/* 种子动画卡片部分保持不变 */}
+          <div className="max-w-md mx-auto w-full mt-20">
+            <Card className="border-blue-500/30 glass-effect shadow-sm mb-6 overflow-hidden hover:shadow-lg transition-all duration-300">
+              <CardContent className="px-3 py-2">
+                {/* 进度条和百分比放在同一行 */}
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className="h-1 bg-blue-900/50 rounded-full overflow-hidden flex-grow">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 to-green-500 animate-pulse"
+                      style={{ width: `${progress}%` }}
+                    />
                   </div>
-                  <Progress value={progress} className="h-2 bg-green-100">
-                    <div className="h-full bg-green-500" style={{ width: `${progress}%` }} />
-                  </Progress>
+                  <span className="text-xs font-medium text-blue-300 whitespace-nowrap">{Math.floor(progress)}%</span>
+                </div>
+                
+                {/* 减小种子图案大小 */}
+                <div className="scale-75 transform-origin-center -my-3">
+                  <AnimatedSeed progress={progress} />
                 </div>
 
-                {/* 浇水按钮 */}
-                <div className="mt-6 flex justify-center">
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      onClick={handleWatering}
-                      disabled={isWatering || progress >= 100}
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300"
-                    >
-                      <Droplets className="w-4 h-4 mr-2" />
-                      {progress >= 100 ? "种子已完全发芽" : isWatering ? "浇水中..." : "浇水"}
-                    </Button>
-                  </motion.div>
+                {/* 浇水按钮更小 */}
+                <div className="mt-0 flex justify-center">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-blue-500/30 hover:bg-green hover:text-blue-300 transition-all duration-300 text-blue-300 text-sm px-2 py-0 h-6 min-h-0"
+                    onClick={handleWatering}
+                    disabled={isWatering || progress >= 100}
+                  >
+                    {isWatering ? (
+                      <span className="animate-pulse">Watering...</span>
+                    ) : (
+                      <span className="flex items-center">
+                         Water
+                      </span>
+                    )}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
-
-
-          {/* 查看排行榜按钮 */}
-          <motion.div
-            className="text-center my-10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                onClick={scrollToLeaderboard}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 rounded-full text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <Trophy className="w-5 h-5 mr-2" />
-                查看育化者排行榜
-              </Button>
-            </motion.div>
-          </motion.div>
+          </div>
+          
         </section>
 
-        {/* 分隔线 */}
-        <div className="relative py-10">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-green-200"></div>
-          </div>
-          <div className="relative flex justify-center">
-            <span className="bg-gradient-to-r from-green-50 via-white to-green-50 px-6 text-green-600 flex items-center">
-              <Leaf className="w-5 h-5 mr-2" />
-              育化者排行榜
-            </span>
-          </div>
-        </div>
 
         {/* 下半部分：排行榜 */}
-        <section ref={leaderboardRef} className="py-16 container mx-auto px-4 max-w-4xl relative z-1">
-          {/* 排行榜标题 */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-10"
-          >
-            <div className="inline-block relative">
-              <h1 className="text-4xl font-bold text-green-800 mb-2 relative z-10">
-                <span className="inline-flex items-center">
-                  <Trophy className="w-8 h-8 mr-3 text-yellow-500" />
-                  育化者排行榜
-                </span>
-              </h1>
-              <motion.div
-                className="absolute -bottom-2 left-0 right-0 h-3 bg-green-200 opacity-50 z-0"
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 1, delay: 0.5 }}
-              />
-            </div>
-            <p className="text-lg text-gray-700 max-w-2xl mx-auto mt-4">
-              在区块链的终末纪元，这些育化者正在用代币销毁量浇灌最后的种子，争夺重启世界的荣耀
-            </p>
-          </motion.div>
+        <section ref={leaderboardRef} className="py-16 container mx-auto px-8 max-w  z-1">
+                    {/* 统计卡片 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Card className="border-blue-500/30 glass-effect hover:shadow-lg transition-all duration-300 hover:scale-[1.02] hover:neon-border">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-400">总育化者</p>
+                      <p className="text-3xl font-bold text-blue-300 neon-text">1,254</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-500/30">
+                      <Leaf className="w-6 h-6 text-green-400" />
+                    </div>
+                  </div>
+                  <div className="mt-4 text-xs text-gray-400">
+                    较昨日 <span className="text-blue-400">+12%</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <Card className="border-blue-500/30 glass-effect hover:shadow-lg transition-all duration-300 hover:scale-[1.02] hover:neon-border">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-400">总销毁量</p>
+                      <p className="text-3xl font-bold text-blue-300 neon-text">78,450</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-500/30">
+                      <Flame className="w-6 h-6 text-orange-400" />
+                    </div>
+                  </div>
+                  <div className="mt-4 text-xs text-gray-400">
+                    较昨日 <span className="text-blue-400">+8%</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+           
+          </div>
 
           {/* 排行榜卡片 */}
-          <Card className="border-green-200 bg-white/80 backdrop-blur-sm shadow-lg mb-8 overflow-hidden">
+          <Card className="border-blue-500/30 glass-effect shadow-lg mb-8 overflow-hidden">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-xl text-green-800 flex items-center">
-                <Zap className="w-5 h-5 mr-2 text-green-600" />
-                育化者地址 + 代币销毁数量
-              </CardTitle>
+            <span className="inline-flex items-center">
+                  育化者排行榜
+                </span>
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-green-600 hover:text-green-800 hover:bg-green-50"
+                  className="text-blue-300 hover:text-blue-100 hover:bg-blue-900/50"
                   onClick={() => setShowConfetti(true)}
                   ref={confettiRef}
                 >
@@ -492,14 +349,14 @@ export default function CombinedPage() {
             <CardContent>
               {isLoading ? (
                 <div className="py-10 flex flex-col items-center">
-                  <div className="w-16 h-16 border-4 border-green-200 border-t-green-500 rounded-full animate-spin mb-4"></div>
-                  <p className="text-green-700">加载排行榜数据中...</p>
+                  <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+                  <p className="text-blue-300">加载排行榜数据中...</p>
                 </div>
               ) : (
                 <AnimatePresence>
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
                     {leaderboardData.map((item, index) => (
-                      <LeaderboardItem key={item.id} item={item} index={index} delay={index * 0.1} />
+                      <LeaderboardItem key={item.id} item={item} index={index}  />
                     ))}
                   </motion.div>
                 </AnimatePresence>
@@ -507,83 +364,13 @@ export default function CombinedPage() {
             </CardContent>
           </Card>
 
-          {/* 统计卡片 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <Card className="border-green-200 bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-500">总育化者</p>
-                      <p className="text-3xl font-bold text-green-700">1,254</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                      <Leaf className="w-6 h-6 text-green-600" />
-                    </div>
-                  </div>
-                  <div className="mt-4 text-xs text-gray-500">
-                    较昨日 <span className="text-green-600">+12%</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <Card className="border-green-200 bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-500">总销毁量</p>
-                      <p className="text-3xl font-bold text-green-700">78,450</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                      <Flame className="w-6 h-6 text-green-600" />
-                    </div>
-                  </div>
-                  <div className="mt-4 text-xs text-gray-500">
-                    较昨日 <span className="text-green-600">+8%</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <Card className="border-green-200 bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-500">种子生长度</p>
-                      <p className="text-3xl font-bold text-green-700">{Math.floor(progress)}%</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                      <Sparkles className="w-6 h-6 text-green-600" />
-                    </div>
-                  </div>
-                  <div className="mt-4 text-xs text-gray-500">
-                    预计完成时间 <span className="text-green-600">7天</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
+          
         </section>
       </main>
 
       {/* 页脚 */}
-      <footer className="py-4 border-t border-green-200 bg-white/80 backdrop-blur-sm relative z-1">
-        <div className="container mx-auto px-4 text-center text-sm text-gray-500">
+      <footer className="py-4 border-t border-blue-500/30 glass-effect relative z-1">
+        <div className="container mx-auto px-4 text-center text-sm text-gray-400">
           <p>© 2025 最后的种子 | The Last of Seed</p>
         </div>
       </footer>
