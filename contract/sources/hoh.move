@@ -4,12 +4,10 @@ module contract::hoh;
 // https://docs.sui.io/concepts/sui-move-concepts/conventions
 
 use sui::{
-    coin::{Self,Coin,TreasuryCap},
-    event::emit,
-    balance::{Self, Balance,Supply},
+    coin::{Self,Coin},
+    balance::{Self,Supply},
     url::new_unsafe_from_bytes
 };
-use bridge::treasury;
 
 const DECIMALS: u8 = 9;
 const SYMBOLS: vector<u8> = b"HOH";
@@ -60,7 +58,7 @@ fun init(otw: HOH, ctx: &mut TxContext) {
     transfer::public_freeze_object(metadata);
 }
 
-public(package) fun hoh_mint( treasury: &mut HOHTreasuryCap,amount: u64,ctx: &mut TxContext): Coin<HOH> {
+public(package) fun hoh_mint(treasury: &mut HOHTreasuryCap,amount: u64,ctx: &mut TxContext): Coin<HOH> {
         coin::from_balance(
             balance::increase_supply(&mut treasury.supply, amount),
             ctx
@@ -73,6 +71,7 @@ public(package) fun hoh_burn(treasury: &mut HOHTreasuryCap, payment: Coin<HOH>) 
     let payment_balance = coin::into_balance(payment);
     //销毁代币-减少供应量
     balance::decrease_supply(&mut treasury.supply, payment_balance);
+
 }
 
 

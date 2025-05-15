@@ -54,7 +54,7 @@ fun init(ctx: &mut TxContext){
    transfer::share_object(seed);
 }
 
-public fun swap_sui_to_hoh(
+entry fun swap_sui_to_hoh(
     treasurycap: &mut HOHTreasuryCap,
     payment: Coin<SUI>,
     pool: &mut Pool,
@@ -78,7 +78,7 @@ public fun swap_sui_to_hoh(
     transfer::public_transfer(hoh_coin, ctx.sender());
 } 
 
-public fun swap_hoh_to_sui(
+entry fun swap_hoh_to_sui(
     treasury: &mut HOHTreasuryCap,
     payment: Coin<HOH>,
     pool: &mut Pool,
@@ -98,11 +98,11 @@ public fun swap_hoh_to_sui(
    
 }
 
-public fun watering (
+entry fun watering (
     treasury: &mut HOHTreasuryCap,
     seed: &mut Seed,
     payment: Coin<HOH>,
-    ctx: &mut TxContext
+    ctx: &TxContext
 ) {
     let payment_amount = coin::value(&payment);
     assert!(payment_amount > 0, EInvaildAmount);

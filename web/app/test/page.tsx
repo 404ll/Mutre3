@@ -2,7 +2,7 @@
 import { useCurrentAccount } from '@mysten/dapp-kit'
 import { useEffect, useState } from 'react'
 import { ConnectButton } from '@mysten/dapp-kit'
-import { swap_HoH,queryWaterEvent,watering,swap_Sui} from '@/contracts/query'
+import { swap_HoH,queryWaterEvent,watering,swap_Sui,withdraw,queryAdminCap} from '@/contracts/query'
 import { useBetterSignAndExecuteTransaction } from '@/hooks/useBetterTx'
 import { Button } from '@/components/ui/button'
 export default function TestPage() {
@@ -16,6 +16,10 @@ export default function TestPage() {
     });
     const {handleSignAndExecuteTransaction: swapToSUI} = useBetterSignAndExecuteTransaction({
         tx: swap_Sui,
+    });
+    
+    const {handleSignAndExecuteTransaction: withdrawToPool} = useBetterSignAndExecuteTransaction({
+        tx: withdraw,
     });
     
     const handleSwap = async () => {
@@ -49,6 +53,18 @@ export default function TestPage() {
                 console.error('Transaction failed:', error);
             }).execute();
     }
+    }
+
+    const handleWithdraw = async() =>{
+        if (account?.address) {
+            queryAdminCap(account?.address)
+            let amountInMist = 0.1 * 1000000000; // Convert to mist
+            withdrawToPool({amount:amountInMist}).onSuccess(async (response) => {
+                console.log('Transaction successful:', response);
+            }).onError((error) => {
+                console.error('Transaction failed:', error);
+            }).execute();
+        }
     }
 
     return (
@@ -103,8 +119,9 @@ export default function TestPage() {
                     Swap to HoH
                   </button>
                 </div>
+              </div>
 
-                <Button
+              <Button
                   onClick={queryWaterEvent}>
                     queryWaterEvent
                   </Button>
@@ -118,7 +135,12 @@ export default function TestPage() {
                     onClick={handleSwapToSUI}>
                         SwapToSui
                     </Button>
-              </div>
+
+                    <Button
+                    onClick={handleWithdraw
+                    }>
+                        withdraw
+                    </Button>
             </main>
         </div>
     );
