@@ -2,13 +2,20 @@
 import { useCurrentAccount } from '@mysten/dapp-kit'
 import { useEffect, useState } from 'react'
 import { ConnectButton } from '@mysten/dapp-kit'
-import { swap_HoH } from '@/contracts/query'
+import { swap_HoH,queryWaterEvent,watering,swap_Sui} from '@/contracts/query'
 import { useBetterSignAndExecuteTransaction } from '@/hooks/useBetterTx'
+import { Button } from '@/components/ui/button'
 export default function TestPage() {
     const account = useCurrentAccount();
     const [amount, setAmount] = useState(0);
     const {handleSignAndExecuteTransaction: swapToHOH} = useBetterSignAndExecuteTransaction({
         tx: swap_HoH,
+    });
+    const {handleSignAndExecuteTransaction: waterSeed} = useBetterSignAndExecuteTransaction({
+        tx: watering,
+    });
+    const {handleSignAndExecuteTransaction: swapToSUI} = useBetterSignAndExecuteTransaction({
+        tx: swap_Sui,
     });
     
     const handleSwap = async () => {
@@ -22,6 +29,27 @@ export default function TestPage() {
                 }).execute();
         }
     };
+
+    const handleWatering = async() =>{
+        if(account?.address) {
+            let amount = 0.1*1000000000;
+            waterSeed({amount:amount}).onSuccess(async(response) =>{
+                console.log('Transaction successful:', response);
+            }).execute();
+        }
+    }
+
+    const handleSwapToSUI = async()=>{
+        if (account?.address) {
+            let amountInMist = 0.1 * 1000000000; // Convert to mist
+            swapToSUI({amount:amountInMist}).onSuccess(async (response) => {
+                console.log('Transaction successful:', response);
+                setAmount(0);
+            }).onError((error) => {
+                console.error('Transaction failed:', error);
+            }).execute();
+    }
+    }
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -75,6 +103,21 @@ export default function TestPage() {
                     Swap to HoH
                   </button>
                 </div>
+
+                <Button
+                  onClick={queryWaterEvent}>
+                    queryWaterEvent
+                  </Button>
+
+                  <Button
+                  onClick={handleWatering}>
+                    Watering..
+                  </Button>
+
+                    <Button
+                    onClick={handleSwapToSUI}>
+                        SwapToSui
+                    </Button>
               </div>
             </main>
         </div>
