@@ -2,7 +2,8 @@
 import { useCurrentAccount } from '@mysten/dapp-kit'
 import { useEffect, useState } from 'react'
 import { ConnectButton } from '@mysten/dapp-kit'
-import { swap_HoH,queryWaterEvent,watering,swap_Sui,withdraw,queryAdminCap} from '@/contracts/query'
+import { createBetterTxFactory,networkConfig, suiClient, } from "@/contracts/index";
+import { swap_HoH,queryWaterEvent,watering,swap_Sui,withdraw,queryAdminCap, queryAddressHOH} from '@/contracts/query'
 import { useBetterSignAndExecuteTransaction } from '@/hooks/useBetterTx'
 import { Button } from '@/components/ui/button'
 export default function TestPage() {
@@ -45,8 +46,12 @@ export default function TestPage() {
 
     const handleSwapToSUI = async()=>{
         if (account?.address) {
+         // 获取用户的 HOH 代币
+          const userHohCoins = await queryAddressHOH(account.address);
+          // 提取代币ID数组
+          const coinIds = userHohCoins.map(coin => coin.id);
             let amountInMist = 0.1 * 1000000000; // Convert to mist
-            swapToSUI({amount:amountInMist}).onSuccess(async (response) => {
+            swapToSUI({amount:amountInMist,coins:coinIds}).onSuccess(async (response) => {
                 console.log('Transaction successful:', response);
                 setAmount(0);
             }).onError((error) => {

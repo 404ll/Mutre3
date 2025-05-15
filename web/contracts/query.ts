@@ -1,7 +1,8 @@
 import { isValidSuiAddress } from "@mysten/sui/utils";
-import { createBetterTxFactory,networkConfig, suiClient } from "./index";
-import { SuiObjectResponse } from "@mysten/sui/client";
+import { createBetterTxFactory,networkConfig, suiClient, } from "./index";
+import { SuiObjectResponse,CoinMetadata } from "@mysten/sui/client";
 import { categorizeSuiObjects, CategorizedObjects } from "@/utils/assetsHelpers";
+import { SuiCoin } from "@/types/contract";
 
 export const getUserProfile = async (address: string): Promise<CategorizedObjects> => {
   if (!isValidSuiAddress(address)) {
@@ -77,7 +78,42 @@ export const queryAdminCap = async(address:string) =>{
 
 }
 
-
+export const queryAddressHOH = async(address:string) =>{
+  if (!isValidSuiAddress(address)) {
+    throw new Error("Invalid Sui address");
+  }
+  
+  const response = await suiClient.getAllCoins({
+    owner: address,
+  });
+  
+  // 调试: 打印所有代币类型
+  console.log("所有代币类型:", response.data.map(coin => coin.coinType));
+  
+  // 使用更灵活的过滤条件
+  const hohCoins = response.data.filter(coin => 
+    coin.coinType.includes("::hoh::HOH") // 使用包含而非完全匹配
+  );
+  
+  console.log("找到的 HOH 代币:", hohCoins);
+  
+  const coins = await Promise.all(hohCoins.map(async(coinContent) => {
+    const coindata = await suiClient.getCoinMetadata({
+      coinType: coinContent.coinType,
+    }) as CoinMetadata;
+    
+    const coin = {
+      id: coinContent.coinObjectId,
+      type: coinContent.coinType,
+      coinMetadata: coindata,
+      balance: Number(coinContent.balance),
+    } as SuiCoin;
+    
+    return coin;
+  }));
+  
+  return coins;
+}
 //======Create Tx=======//
 
 // public fun swap_sui_to_hoh(
@@ -88,7 +124,7 @@ export const queryAdminCap = async(address:string) =>{
 // )
 export const swap_HoH = createBetterTxFactory<{amount:number}>((tx, networkVariables, {amount }) => {
   const splitResult = tx.splitCoins(tx.gas, [tx.pure.u64(amount)]);
-
+  tx.mergeCoins
   console.log("splitResult", splitResult.values);
   tx.moveCall({
     package:  networkVariables.Package,
@@ -105,16 +141,48 @@ export const swap_HoH = createBetterTxFactory<{amount:number}>((tx, networkVaria
 //   pool: &mut Pool,
 //   ctx: &mut TxContext
 // )
-export const swap_Sui = createBetterTxFactory<{amount:number}>((tx, networkVariables, {amount}) => {
-  console.log(networkVariables.HoHTreasury);
-  const splitResult = tx.splitCoins(tx.object(networkVariables.HoH), [tx.pure.u64(amount)]);
-  console.log("splitResult", splitResult);
-  tx.moveCall({
-    package:  networkVariables.Package,
-    module: "swap",
-    function: "swap_hoh_to_sui",
-    arguments: [tx.object(networkVariables.HoHTreasury),tx.object(splitResult),tx.object(networkVariables.Pool)],
-  });
+export const swap_Sui = createBetterTxFactory<{amount: number, coins: string[]}>((tx, networkVariables, {amount, coins}) => {
+  // 1. 如果有多个代币，先合并
+  if (coins.length > 1) {
+    // 找到同类型的第一个代币作为目标
+    const destination = tx.object(coins[0]);
+    // 其余代币作为源
+    const sources = coins.slice(1).map(id => tx.object(id));
+    // 执行合并
+    tx.mergeCoins(destination, sources);
+    // 从合并后的代币中分割出交易金额
+    const splitResult = tx.splitCoins(destination, [tx.pure.u64(amount)]);
+    
+    // 调用合约
+    tx.moveCall({
+      package: networkVariables.Package,
+      module: "swap",
+      function: "swap_hoh_to_sui",
+      arguments: [
+        tx.object(networkVariables.HoHTreasury),
+        splitResult,  // 不需要tx.object()包装
+        tx.object(networkVariables.Pool)
+      ],
+    });
+  } else if (coins.length === 1) {
+    // 只有一个代币，直接从它分割
+    const coin = tx.object(coins[0]);
+    const splitResult = tx.splitCoins(coin, [tx.pure.u64(amount)]);
+    
+    tx.moveCall({
+      package: networkVariables.Package,
+      module: "swap",
+      function: "swap_hoh_to_sui",
+      arguments: [
+        tx.object(networkVariables.HoHTreasury),
+        tx.object(splitResult),
+        tx.object(networkVariables.Pool)
+      ],
+    });
+  } else {
+    throw new Error("No coin provided for swap");
+  }
+  
   return tx;
 });
 

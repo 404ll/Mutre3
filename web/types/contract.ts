@@ -1,3 +1,4 @@
+import { CoinMetadata } from "@mysten/sui/client";
 // public struct Seed has key{
 //     id: UID,
 //     cultivator: Table<address, u64>,
@@ -17,3 +18,10 @@ export interface WateringEvent{
     owner:string,
     amount:number
 }
+
+export interface SuiCoin  {
+    id: string,
+    type: string,
+    coinMetadata?: CoinMetadata,
+    balance?: number,
+  }
