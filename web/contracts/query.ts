@@ -87,8 +87,6 @@ export const queryAddressHOH = async(address:string) =>{
     owner: address,
   });
   
-  // 调试: 打印所有代币类型
-  console.log("所有代币类型:", response.data.map(coin => coin.coinType));
   
   // 使用更灵活的过滤条件
   const hohCoins = response.data.filter(coin => 
@@ -141,18 +139,18 @@ export const swap_HoH = createBetterTxFactory<{amount:number}>((tx, networkVaria
 //   pool: &mut Pool,
 //   ctx: &mut TxContext
 // )
-export const swap_Sui = createBetterTxFactory<{amount: number, coins: string[]}>((tx, networkVariables, {amount, coins}) => {
+export const swap_Sui = createBetterTxFactory<{amount: number,coins:string[]}>((tx, networkVariables, {amount, coins}) => {
   // 1. 如果有多个代币，先合并
   if (coins.length > 1) {
     // 找到同类型的第一个代币作为目标
     const destination = tx.object(coins[0]);
     // 其余代币作为源
-    const sources = coins.slice(1).map(id => tx.object(id));
+    const sources = coins.slice(1);
+    console.log("sources",sources);
     // 执行合并
     tx.mergeCoins(destination, sources);
     // 从合并后的代币中分割出交易金额
-    const splitResult = tx.splitCoins(destination, [tx.pure.u64(amount)]);
-    
+    let splitResult = tx.splitCoins(destination, [tx.pure.u64(amount)]);
     // 调用合约
     tx.moveCall({
       package: networkVariables.Package,
@@ -160,13 +158,14 @@ export const swap_Sui = createBetterTxFactory<{amount: number, coins: string[]}>
       function: "swap_hoh_to_sui",
       arguments: [
         tx.object(networkVariables.HoHTreasury),
-        splitResult,  // 不需要tx.object()包装
+        tx.object("0x601736de1ab87a974a6d79f573b9c9d7a791a348d89ab49187d2311e2849e579"),  
         tx.object(networkVariables.Pool)
       ],
     });
   } else if (coins.length === 1) {
     // 只有一个代币，直接从它分割
     const coin = tx.object(coins[0]);
+    console.log("一个coi1",coin);
     const splitResult = tx.splitCoins(coin, [tx.pure.u64(amount)]);
     
     tx.moveCall({
@@ -192,15 +191,34 @@ export const swap_Sui = createBetterTxFactory<{amount: number, coins: string[]}>
 //   payment: Coin<HOH>,
 //   ctx: &mut TxContext
 // )
-export const watering = createBetterTxFactory<{amount:number}>((tx, networkVariables, {amount }) => {
-  console.log("coin",networkVariables.HoH);
-  const splitResult = tx.splitCoins(tx.object(networkVariables.HoH), [tx.pure.u64(amount)]);
+export const watering = createBetterTxFactory<{amount:number,coins:string[]}>((tx, networkVariables, {amount,coins }) => {
+  // 1. 如果有多个代币，先合并
+  if (coins.length > 1) {
+    // 找到同类型的第一个代币作为目标
+    const destination = tx.object(coins[0]);
+    // 其余代币作为源
+    const sources = coins.slice(1);
+    console.log("sources",sources);
+    // 执行合并
+    tx.mergeCoins(destination, sources);
+    // 从合并后的代币中分割出交易金额
+    let splitResult = tx.splitCoins(destination, [tx.pure.u64(amount)]);
+    // 调用合约
+    tx.moveCall({
+      package: networkVariables.Package,
+      module: "swap",
+      function: "watering",
+      arguments: [tx.object(networkVariables.HoHTreasury),tx.object(networkVariables.Seed),tx.object(splitResult)],
+    });
+  } else if (coins.length === 1) {
+
   tx.moveCall({
     package:  networkVariables.Package,
     module: "swap",
     function: "watering",
     arguments: [tx.object(networkVariables.HoHTreasury),tx.object(networkVariables.Seed),tx.object(splitResult)],
   });
+}
   return tx;
 });
 

@@ -49,7 +49,7 @@ export default function TestPage() {
          // 获取用户的 HOH 代币
           const userHohCoins = await queryAddressHOH(account.address);
           // 提取代币ID数组
-          const coinIds = userHohCoins.map(coin => coin.id);
+            const coinIds = userHohCoins.map(coin => coin.id);
             let amountInMist = 0.1 * 1000000000; // Convert to mist
             swapToSUI({amount:amountInMist,coins:coinIds}).onSuccess(async (response) => {
                 console.log('Transaction successful:', response);
