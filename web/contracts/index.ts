@@ -27,7 +27,7 @@ const { networkConfig, useNetworkVariables } = createNetworkConfig({
     testnet: {
         url: getFullnodeUrl("testnet"),
         variables: getContractConfig("testnet"),
-        package:"0xa597b5d4458251585a52739a2d799618f9c3acdbd75db93e51b7a8a81283963a"
+        package:"0xb76167920a64538ac99f7d682413a775505b1f767c0fec17647453270f3d7d8b"
     },
     mainnet: {
         url: getFullnodeUrl("mainnet"), 

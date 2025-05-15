@@ -3,6 +3,7 @@ import { createBetterTxFactory,networkConfig, suiClient, } from "./index";
 import { SuiObjectResponse,CoinMetadata } from "@mysten/sui/client";
 import { categorizeSuiObjects, CategorizedObjects } from "@/utils/assetsHelpers";
 import { SuiCoin } from "@/types/contract";
+import { WateringEvent } from "@/types/contract";
 
 export const getUserProfile = async (address: string): Promise<CategorizedObjects> => {
   if (!isValidSuiAddress(address)) {
@@ -31,13 +32,19 @@ export const getUserProfile = async (address: string): Promise<CategorizedObject
 };
 
 //======Query=======//
-export const queryWaterEvent = async() =>{
-  const event = suiClient.queryEvents({
+export const queryWaterEvent = async():Promise<WateringEvent[]> =>{
+  const events = await suiClient.queryEvents({
     query:{
       MoveEventType:`${networkConfig.testnet.package}::swap::WateringEvent`
     }
-  })
-  console.log("Event",event)
+  });
+  const wateringEvents: WateringEvent[] = [];
+  for(const event of events.data){
+    // Assuming event has a structure that can be mapped to WateringEvent
+    wateringEvents.push(event.parsedJson as WateringEvent);
+  }
+  console.log("wateringEvents",wateringEvents);
+  return wateringEvents;
 }
 
 export const queryAdminCap = async(address:string) =>{
@@ -78,6 +85,7 @@ export const queryAdminCap = async(address:string) =>{
 
 }
 
+
 export const queryAddressHOH = async(address:string) =>{
   if (!isValidSuiAddress(address)) {
     throw new Error("Invalid Sui address");
@@ -90,7 +98,7 @@ export const queryAddressHOH = async(address:string) =>{
   
   // 使用更灵活的过滤条件
   const hohCoins = response.data.filter(coin => 
-    coin.coinType.includes("::hoh::HOH") // 使用包含而非完全匹配
+    coin.coinType == ("0xb76167920a64538ac99f7d682413a775505b1f767c0fec17647453270f3d7d8b::hoh::HOH") // 使用包含而非完全匹配
   );
   
   console.log("找到的 HOH 代币:", hohCoins);
@@ -158,7 +166,7 @@ export const swap_Sui = createBetterTxFactory<{amount: number,coins:string[]}>((
       function: "swap_hoh_to_sui",
       arguments: [
         tx.object(networkVariables.HoHTreasury),
-        tx.object("0x601736de1ab87a974a6d79f573b9c9d7a791a348d89ab49187d2311e2849e579"),  
+        tx.object(splitResult),  
         tx.object(networkVariables.Pool)
       ],
     });
@@ -211,8 +219,11 @@ export const watering = createBetterTxFactory<{amount:number,coins:string[]}>((t
       arguments: [tx.object(networkVariables.HoHTreasury),tx.object(networkVariables.Seed),tx.object(splitResult)],
     });
   } else if (coins.length === 1) {
-
-  tx.moveCall({
+    // 只有一个代币，直接从它分割
+    const coin = tx.object(coins[0]);
+    console.log("一个coi1",coin);
+    const splitResult = tx.splitCoins(coin, [tx.pure.u64(amount)]);
+    tx.moveCall({
     package:  networkVariables.Package,
     module: "swap",
     function: "watering",

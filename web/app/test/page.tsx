@@ -38,7 +38,10 @@ export default function TestPage() {
     const handleWatering = async() =>{
         if(account?.address) {
             let amount = 0.1*1000000000;
-            waterSeed({amount:amount}).onSuccess(async(response) =>{
+            // 提取代币ID数组
+            const userHohCoins = await queryAddressHOH(account.address);
+            const coinIds = userHohCoins.map(coin => coin.id);
+            waterSeed({amount:amount,coins:coinIds}).onSuccess(async(response) =>{
                 console.log('Transaction successful:', response);
             }).execute();
         }
