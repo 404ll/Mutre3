@@ -71,23 +71,15 @@ html {
 
 /* 霓虹灯效果 */
 .neon-text {
-  text-shadow: 
-    0 0 5px rgba(59, 130, 246, 0.5),
-    0 0 10px rgba(59, 130, 246, 0.3),
-    0 0 15px rgba(59, 130, 246, 0.2);
+  text-shadow: 0 0 5px rgba(59, 130, 246, 0.5), 0 0 10px rgba(59, 130, 246, 0.3), 0 0 15px rgba(59, 130, 246, 0.2);
 }
 
 .neon-border {
-  box-shadow: 
-    0 0 5px rgba(59, 130, 246, 0.5),
-    0 0 10px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 5px rgba(59, 130, 246, 0.5), 0 0 10px rgba(59, 130, 246, 0.3);
 }
 
 .neon-green {
-  text-shadow: 
-    0 0 5px rgba(34, 197, 94, 0.5),
-    0 0 10px rgba(34, 197, 94, 0.3),
-    0 0 15px rgba(34, 197, 94, 0.2);
+  text-shadow: 0 0 5px rgba(34, 197, 94, 0.5), 0 0 10px rgba(34, 197, 94, 0.3), 0 0 15px rgba(34, 197, 94, 0.2);
 }
 
 /* 玻璃态效果 */
@@ -110,9 +102,15 @@ html {
 }
 
 @keyframes gradientAnimation {
-  0% { background-position: 0% 50% }
-  50% { background-position: 100% 50% }
-  100% { background-position: 0% 50% }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* 闪光效果 */
@@ -134,9 +132,15 @@ html {
 }
 
 @keyframes glowPulse {
-  0% { opacity: 0; }
-  50% { opacity: 0.5; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 /* 星星背景 */
@@ -150,7 +154,28 @@ html {
 }
 
 @keyframes twinkle {
-  0% { opacity: 0.2; }
-  50% { opacity: 1; }
-  100% { opacity: 0.2; }
+  0% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+/* 跑马灯动画 */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 30s linear infinite;
 }

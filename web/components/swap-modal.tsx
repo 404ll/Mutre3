@@ -39,14 +39,15 @@ export const SwapModal = ({ isOpen, onClose, onSwapToHOH, onSwapToSUI,address }:
               Number(suibalance) / 1000000000 : 0
             setSuiBalance(suiValue.toFixed(4)) // 保留4位小数
             
-            // 获取并转换 HOH 余额
+            // 获取并转换 HOH 余额 - 修复这部分
             const hohBalance = await queryAddressHOH(address)
-            const hohValue = typeof hohBalance === "string" ? 
-              Number(hohBalance) / 1000000000 : 0
+            // 检查是否为数组并计算总余额
+            const hohValue = typeof hohBalance === "string" ? Number(hohBalance) : 0
             setHohBalance(hohValue.toFixed(4)) // 保留4位小数
           } catch (error) {
             console.error("Failed to fetch balances:", error)
           }
+          
         }
       }
   

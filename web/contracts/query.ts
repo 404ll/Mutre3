@@ -4,6 +4,7 @@ import { SuiObjectResponse,CoinMetadata } from "@mysten/sui/client";
 import { categorizeSuiObjects, CategorizedObjects } from "@/utils/assetsHelpers";
 import { SuiCoin } from "@/types/contract";
 import { WateringEvent } from "@/types/contract";
+import { inter } from "@/app/fonts";
 
 const HOH_TYPE = "0xb76167920a64538ac99f7d682413a775505b1f767c0fec17647453270f3d7d8b::hoh::HOH"
 
@@ -34,20 +35,91 @@ export const getUserProfile = async (address: string): Promise<CategorizedObject
 };
 
 //======Query=======//
-export const queryWaterEvent = async():Promise<WateringEvent[]> =>{
-  const events = await suiClient.queryEvents({
-    query:{
-      MoveEventType:`${networkConfig.testnet.package}::swap::WateringEvent`
+
+//查询水滴事件--限制
+export const queryWaterEvent = async(options?: {
+  timeRange?: { startTime: number; endTime: number };
+  sender?: string;
+  limit?: number;
+  cursor?: string;
+}): Promise<WateringEvent[]> => {
+
+  try {
+    // 构建基本查询选项
+    const eventType = `${networkConfig.testnet.variables.Package}::swap::WateringEvent`;
+    
+    // 创建查询选项 - 基本参数
+    const queryOptions: any = {
+      limit: options?.limit || 50
+    };
+    
+    // 只能使用一种过滤器，优先使用事件类型过滤器
+    queryOptions.query = { MoveEventType: eventType };
+    
+    // 添加分页游标
+    if (options?.cursor) {
+      queryOptions.cursor = options.cursor;
     }
-  });
-  const wateringEvents: WateringEvent[] = [];
-  for(const event of events.data){
-    // Assuming event has a structure that can be mapped to WateringEvent
-    wateringEvents.push(event.parsedJson as WateringEvent);
+    
+    // 执行查询
+    const events = await suiClient.queryEvents(queryOptions);
+    
+    // 在客户端过滤时间范围
+    let filteredEvents = events.data;
+    
+    // 如果提供了时间范围，在客户端进行过滤
+    if (options?.timeRange) {
+      const startTime = options.timeRange.startTime.toString();
+      const endTime = options.timeRange.endTime.toString();
+      
+      filteredEvents = filteredEvents.filter(event => {
+        const eventTime = Number(event.timestampMs);
+        return eventTime >= startTime && eventTime <= endTime;
+      });
+    }
+    
+    // 如果提供了发送者，在客户端进行过滤
+    if (options?.sender) {
+      filteredEvents = filteredEvents.filter(event => 
+        event.sender === options.sender
+      );
+    }
+    
+    // 处理事件数据
+    const wateringEvents: WateringEvent[] = [];
+    for (const event of filteredEvents) {
+      wateringEvents.push({
+        ...event.parsedJson as WateringEvent,
+      });
+    }
+    
+    console.log(`找到 ${wateringEvents.length} 个符合条件的事件`);
+    return wateringEvents;
+  } catch (error) {
+    console.error("查询事件失败:", error);
+    return [];
   }
-  console.log("wateringEvents",wateringEvents);
-  return wateringEvents;
+};
+
+export const queryWaterEventByTime = async () => {
+  try {
+    const oneDayAgo = Date.now() - 86400000; // 24小时前
+    const now = Date.now();
+
+    const recentEvents = await queryWaterEvent({
+        timeRange: {
+          startTime: oneDayAgo,
+          endTime: now,
+        },
+      limit: 10
+    });
+    return recentEvents;
+  } catch (error) {
+    console.error("获取最近24小时事件失败:", error);
+    return [];
+  }
 }
+
 
 export const queryAdminCap = async(address:string) =>{
 
@@ -103,13 +175,106 @@ export const queryAddressSUI = async(address:string) =>{
   return balance.totalBalance;
 }
 
-export const queryAddressHOH = async(address:string,) =>{
-  const balance = await suiClient.getBalance({
+export const queryAddressHOH = async(address: string) => {
+  // 先获取余额检查用户是否有 HOH 代币
+  const balanceResponse = await suiClient.getBalance({
     owner: address,
     coinType: HOH_TYPE,
-  })
-  console.log("balance",balance.totalBalance);
-  return balance.totalBalance;
+  });
+  console.log("balance", balanceResponse.totalBalance);
+  
+  // 如果没有余额，返回空数组
+  if (Number(balanceResponse.totalBalance) <= 0) {
+    return [];
+  }
+  
+  // 获取所有代币
+  const allCoins = await suiClient.getAllCoins({
+    owner: address,
+  });
+  
+  // 过滤出 HOH 类型的代币
+  const hohCoins = allCoins.data.filter(coin => 
+    coin.coinType === HOH_TYPE
+  );
+  
+  // 转换为函数期望的格式
+  return hohCoins.map(coin => ({
+    id: coin.coinObjectId,
+    balance: Number(coin.balance),
+    type: coin.coinType
+  }));
+}
+
+// public struct Seed has key{
+//   id: UID,
+//   cultivator: Table<address, u64>,
+//   hoh_burn:u64,
+// }
+
+export const queryAllCultivator = async() => {
+  const obj = await suiClient.getObject({
+    id: networkConfig.testnet.variables.Seed,
+    options: {
+      showContent: true,
+      showType: true,
+    },
+  });
+
+  console.log("seed obj", obj);
+  
+  if (obj.data && obj.data.content && "fields" in obj.data.content) {
+    const table = (obj.data.content as any).fields.cultivator;
+    console.log("Cultivator table:", table);
+    
+    const tableId = table.fields?.id.id;
+    console.log("tableId", tableId);
+
+    // 获取动态字段列表
+    const tableDatas = await suiClient.getDynamicFields({
+      parentId: tableId,
+    });
+    console.log("tableDatas", tableDatas);
+
+    // 使用 Promise.all 正确处理异步查询
+    const tableDataPromises = tableDatas.data.map(async (item) => {
+      const fieldObject = await suiClient.getDynamicFieldObject({
+        parentId: tableId,
+        name: item.name,
+      });
+      
+      // 返回处理后的数据
+      return {
+        name: item.name,
+        fieldObject: fieldObject
+      };
+    });
+    
+    // 等待所有查询完成
+    const tableData = await Promise.all(tableDataPromises);
+    console.log("tableData", tableData);
+    
+    // 构建培育者数据
+    const cultivators = tableData.map(item => {
+      if (item.fieldObject.data && 
+          item.fieldObject.data.content && 
+          "fields" in item.fieldObject.data.content) {
+        
+        // 从动态字段对象中提取数值
+        const value = (item.fieldObject.data.content as any).fields.value/1000000000;
+        
+        return {
+          address: item.name.value, // 地址
+          burnAmount: value,        // 贡献数量
+        };
+      }
+      return null;
+    }).filter(Boolean); // 过滤掉可能的null值
+    
+    return cultivators;
+  } else {
+    throw new Error("Invalid object structure: 'fields' not found in content");
+  }
 }
 //======Create Tx=======//
 
@@ -143,9 +308,9 @@ export const swap_Sui = createBetterTxFactory<{amount: number,coins:string[]}>((
   if (coins.length > 1) {
     // 找到同类型的第一个代币作为目标
     const destination = tx.object(coins[0]);
-    // 其余代币作为源
-    const sources = coins.slice(1);
-    console.log("sources",sources);
+    // 修复：将每个ID转换为对象引用
+    const sources = coins.slice(1).map(id => tx.object(id));
+    
     // 执行合并
     tx.mergeCoins(destination, sources);
     // 从合并后的代币中分割出交易金额
@@ -243,3 +408,37 @@ export const withdraw = createBetterTxFactory<{amount:number}>((tx, networkVaria
   });
   return tx;
 });
+
+// 添加一个简单的时间范围查询测试函数
+export const testTimeRangeQuery = async() => {
+  try {
+    const oneDayAgo = Date.now() - 86400000;
+    const now = Date.now();
+    
+    // 构建查询选项 - 尽可能简单
+    const queryOptions = {
+      // 查询过滤器
+      query: {
+        // 使用 TimeRange 查询所有事件
+        TimeRange: {
+          startTime: oneDayAgo.toString(),
+          endTime: now.toString()
+        }
+      }
+    };
+    
+    console.log("测试查询选项:", JSON.stringify(queryOptions, null, 2));
+    
+    // 执行查询
+    const events = await suiClient.queryEvents(queryOptions);
+    
+    console.log(`找到 ${events.data.length} 个事件`);
+    
+    // 返回结果
+    return events.data;
+  } catch (error) {
+    console.error("测试查询失败:", error);
+    console.error("错误详情:", JSON.stringify(error, null, 2));
+    return [];
+  }
+};

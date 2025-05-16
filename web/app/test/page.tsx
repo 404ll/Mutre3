@@ -3,7 +3,7 @@ import { useCurrentAccount } from '@mysten/dapp-kit'
 import { useEffect, useState } from 'react'
 import { ConnectButton } from '@mysten/dapp-kit'
 import { createBetterTxFactory,networkConfig, suiClient, } from "@/contracts/index";
-import { swap_HoH,queryWaterEvent,watering,swap_Sui,withdraw,queryAdminCap, queryAddressHOH} from '@/contracts/query'
+import { swap_HoH,queryWaterEvent,watering,swap_Sui,withdraw,queryAdminCap, queryAllCultivator,queryAddressHOH,testTimeRangeQuery} from '@/contracts/query'
 import { useBetterSignAndExecuteTransaction } from '@/hooks/useBetterTx'
 import { Button } from '@/components/ui/button'
 export default function TestPage() {
@@ -63,6 +63,12 @@ export default function TestPage() {
     }
     }
 
+    const queryseed = async() =>{
+        if (account?.address) {
+            const seed = await queryAllCultivator();
+            console.log('Query successful:', seed);
+        }
+    }
     const handleWithdraw = async() =>{
         if (account?.address) {
             queryAdminCap(account?.address)
@@ -74,6 +80,21 @@ export default function TestPage() {
             }).execute();
         }
     }
+
+    // 在您的组件中使用
+    const testEvents = async () => {
+      try {
+        const events = await testTimeRangeQuery();
+        console.log("测试事件结果:", events);
+      } catch (err) {
+        console.error("测试失败", err);
+      }
+    }
+
+    // 在组件加载时或通过按钮触发测试
+    useEffect(() => {
+      testEvents();
+    }, []);
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -130,8 +151,8 @@ export default function TestPage() {
               </div>
 
               <Button
-                  onClick={queryWaterEvent}>
-                    queryWaterEvent
+                  onClick={queryseed}>
+                    queryseed
                   </Button>
 
                   <Button

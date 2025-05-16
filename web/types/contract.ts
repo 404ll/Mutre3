@@ -25,3 +25,9 @@ export interface SuiCoin  {
     coinMetadata?: CoinMetadata,
     balance?: number,
   }
+
+
+
+ export interface CultivatorTable {
+    [address: string]: number;
+  }
