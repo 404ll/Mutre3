@@ -5,6 +5,8 @@ import { categorizeSuiObjects, CategorizedObjects } from "@/utils/assetsHelpers"
 import { SuiCoin } from "@/types/contract";
 import { WateringEvent } from "@/types/contract";
 
+const HOH_TYPE = "0xb76167920a64538ac99f7d682413a775505b1f767c0fec17647453270f3d7d8b::hoh::HOH"
+
 export const getUserProfile = async (address: string): Promise<CategorizedObjects> => {
   if (!isValidSuiAddress(address)) {
     throw new Error("Invalid Sui address");
@@ -86,39 +88,28 @@ export const queryAdminCap = async(address:string) =>{
 }
 
 
-export const queryAddressHOH = async(address:string) =>{
-  if (!isValidSuiAddress(address)) {
-    throw new Error("Invalid Sui address");
-  }
-  
-  const response = await suiClient.getAllCoins({
+export const queryAddressSUI = async(address:string) =>{
+  const balance = await suiClient.getBalance({
     owner: address,
-  });
-  
-  
-  // 使用更灵活的过滤条件
-  const hohCoins = response.data.filter(coin => 
-    coin.coinType == ("0xb76167920a64538ac99f7d682413a775505b1f767c0fec17647453270f3d7d8b::hoh::HOH") // 使用包含而非完全匹配
-  );
-  
-  console.log("找到的 HOH 代币:", hohCoins);
-  
-  const coins = await Promise.all(hohCoins.map(async(coinContent) => {
-    const coindata = await suiClient.getCoinMetadata({
-      coinType: coinContent.coinType,
-    }) as CoinMetadata;
-    
-    const coin = {
-      id: coinContent.coinObjectId,
-      type: coinContent.coinType,
-      coinMetadata: coindata,
-      balance: Number(coinContent.balance),
-    } as SuiCoin;
-    
-    return coin;
-  }));
-  
-  return coins;
+    coinType: "0x2::sui::SUI",
+  })
+  console.log("balance",balance.totalBalance);
+//   balance{
+//     coinObjectCount:nubmer
+//     coinType:string 
+//     lockedBalance: {}
+//     totalBalance: string 
+//   }
+  return balance.totalBalance;
+}
+
+export const queryAddressHOH = async(address:string,) =>{
+  const balance = await suiClient.getBalance({
+    owner: address,
+    coinType: HOH_TYPE,
+  })
+  console.log("balance",balance.totalBalance);
+  return balance.totalBalance;
 }
 //======Create Tx=======//
 

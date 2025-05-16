@@ -10,81 +10,91 @@ import { AnimatedSeed } from "@/components/ui/animated-seed"
 import Image from "next/image"
 import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit"
 import { StarBackground } from "@/components/ui/star-background"
-import { useBetterSignAndExecuteTransaction } from '@/hooks/useBetterTx'
-import { swap_HoH, watering, swap_Sui } from '@/contracts/query'
+import { useBetterSignAndExecuteTransaction } from "@/hooks/useBetterTx"
+import { swap_HoH, watering, swap_Sui } from "@/contracts/query"
 import { queryAddressHOH } from "@/contracts/query"
 import { LeaderboardItem } from "@/components/Leaderboard"
+import { SwapModal } from "@/components/swap-modal"
+
 // 模拟排行榜数据
 const leaderboardData = [
   { id: 1, address: "0x8f7d...e5a2", tokens: 15420 },
-  { id: 2, address: "0x3a9c...b7f1", tokens: 12350},
-  { id: 3, address: "0x6e2b...9d4c", tokens: 9870},
-  { id: 4, address: "0x1f5e...c3d8", tokens: 8540},
-  { id: 5, address: "0x7a2d...f6e9", tokens: 7650},
+  { id: 2, address: "0x3a9c...b7f1", tokens: 12350 },
+  { id: 3, address: "0x6e2b...9d4c", tokens: 9870 },
+  { id: 4, address: "0x1f5e...c3d8", tokens: 8540 },
+  { id: 5, address: "0x7a2d...f6e9", tokens: 7650 },
 ]
 
-
 export default function CombinedPage() {
-    const [amountSUI, setAmountSUI] = useState(0)
-    const [amountHOH, setAmountHOH] = useState(0)
-    const account = useCurrentAccount()
-    const [progress, setProgress] = useState(15)
-    const [seedState, setSeedState] = useState("休眠中") // 初始状态：休眠中
-    const [isLoading, setIsLoading] = useState(true)
-    const [showConfetti, setShowConfetti] = useState(false)
-    const [isWatering, setIsWatering] = useState(false)
-    const confettiRef = useRef<HTMLButtonElement>(null)
-    const leaderboardRef = useRef<HTMLDivElement>(null)
+  const [amountSUI, setAmountSUI] = useState(0)
+  const [amountHOH, setAmountHOH] = useState(0)
+  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false)
+  const account = useCurrentAccount()
+  const [progress, setProgress] = useState(15)
+  const [seedState, setSeedState] = useState("休眠中") // 初始状态：休眠中
+  const [isLoading, setIsLoading] = useState(true)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [isWatering, setIsWatering] = useState(false)
+  const confettiRef = useRef<HTMLButtonElement>(null)
+  const leaderboardRef = useRef<HTMLDivElement>(null)
 
-    const {handleSignAndExecuteTransaction: swapToHOH} = useBetterSignAndExecuteTransaction({
-            tx: swap_HoH,
-        });
-    const {handleSignAndExecuteTransaction: waterSeed} = useBetterSignAndExecuteTransaction({
-            tx: watering,
-        });
-    const {handleSignAndExecuteTransaction: swapToSUI} = useBetterSignAndExecuteTransaction({
-            tx: swap_Sui,
-        });
+  const { handleSignAndExecuteTransaction: swapToHOH } = useBetterSignAndExecuteTransaction({
+    tx: swap_HoH,
+  })
+  const { handleSignAndExecuteTransaction: waterSeed } = useBetterSignAndExecuteTransaction({
+    tx: watering,
+  })
+  const { handleSignAndExecuteTransaction: swapToSUI } = useBetterSignAndExecuteTransaction({
+    tx: swap_Sui,
+  })
 
-      const handleSwapToHOH = async () => {
-              if (account?.address) {
-                      let amountInMist = amountHOH * 1000000000; // Convert to mist
-                      swapToHOH({amount:amountInMist}).onSuccess(async (response) => {
-                          console.log('Transaction successful:', response);
-                          setAmountHOH(0);
-                      }).onError((error) => {
-                          console.error('Transaction failed:', error);
-                      }).execute();
-              }
-          };
-      
-          const handleWatering = async() =>{
-              if(account?.address) {
-                  let amount = 0.1 * 1000000000;
-                  // 提取代币ID数组
-                  const userHohCoins = await queryAddressHOH(account.address);
-                  const coinIds = userHohCoins.map(coin => coin.id);
-                  waterSeed({amount:amount,coins:coinIds}).onSuccess(async(response) =>{
-                      console.log('Transaction successful:', response);
-                  }).execute();
-              }
-          }
-      
-          const handleSwapToSUI = async()=>{
-              if (account?.address) {
-               // 获取用户的 HOH 代币
-                const userHohCoins = await queryAddressHOH(account.address);
-                // 提取代币ID数组
-                  const coinIds = userHohCoins.map(coin => coin.id);
-                  let amountInMist = amountSUI * 1000000000; // Convert to mist
-                  swapToSUI({amount:amountInMist,coins:coinIds}).onSuccess(async (response) => {
-                      console.log('Transaction successful:', response);
-                      setAmountSUI(0);
-                  }).onError((error) => {
-                      console.error('Transaction failed:', error);
-                  }).execute();
-          }
-          }
+  const handleSwapToHOH = async (amount: number) => {
+    if (account?.address) {
+      const amountInMist = amount * 1000000000 // Convert to mist
+      swapToHOH({ amount: amountInMist })
+        .onSuccess(async (response) => {
+          console.log("Transaction successful:", response)
+          setAmountHOH(0)
+        })
+        .onError((error) => {
+          console.error("Transaction failed:", error)
+        })
+        .execute()
+    }
+  }
+
+  const handleWatering = async () => {
+    if (account?.address) {
+      const amount = 0.1 * 1000000000
+      // 提取代币ID数组
+      const userHohCoins = await queryAddressHOH(account.address)
+      const coinIds = userHohCoins.map((coin) => coin.id)
+      waterSeed({ amount: amount, coins: coinIds })
+        .onSuccess(async (response) => {
+          console.log("Transaction successful:", response)
+        })
+        .execute()
+    }
+  }
+
+  const handleSwapToSUI = async (amount: number) => {
+    if (account?.address) {
+      // 获取用户的 HOH 代币
+      const userHohCoins = await queryAddressHOH(account.address)
+      // 提取代币ID数组
+      const coinIds = userHohCoins.map((coin) => coin.id)
+      const amountInMist = amount * 1000000000 // Convert to mist
+      swapToSUI({ amount: amountInMist, coins: coinIds })
+        .onSuccess(async (response) => {
+          console.log("Transaction successful:", response)
+          setAmountSUI(0)
+        })
+        .onError((error) => {
+          console.error("Transaction failed:", error)
+        })
+        .execute()
+    }
+  }
 
   // 模拟种子生长进度
   useEffect(() => {
@@ -139,22 +149,16 @@ export default function CombinedPage() {
     }
   }, [showConfetti])
 
-
   return (
     <div className="min-h-screen flex flex-col">
-        <StarBackground />
+      <StarBackground />
       {/* 导航栏 - 更浅的颜色 */}
       <header className="border-b border-blue-100/30 glass-effect fixed top-0 left-0 right-0 w-full z-50 backdrop-blur-sm bg-white">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center overflow-hidden">
               <div className="w-20 h-20 relative">
-                <Image 
-                  src="/logo1.png" 
-                  alt="Sui Logo" 
-                  fill
-                  style={{ objectFit: "cover", objectPosition: "center" }}
-                />
+                <Image src="/logo1.png" alt="Sui Logo" fill style={{ objectFit: "cover", objectPosition: "center" }} />
               </div>
             </div>
 
@@ -162,45 +166,43 @@ export default function CombinedPage() {
               <Button
                 variant="outline"
                 className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300 text-lg h-8"
-              >
-                mint
-              </Button>
-              <Button
-                variant="outline"
-                className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300 text-lg h-8"
+                onClick={() => setIsSwapModalOpen(true)}
               >
                 swap
               </Button>
-              <ConnectButton 
-                className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300 text-lg h-8"
-              />
+              <ConnectButton className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300 text-lg h-8" />
             </nav>
           </div>
         </div>
       </header>
 
+      {/* Swap Modal */}
+      <SwapModal
+        isOpen={isSwapModalOpen}
+        onClose={() => setIsSwapModalOpen(false)}
+        onSwapToHOH={handleSwapToHOH}
+        onSwapToSUI={handleSwapToSUI}
+        address={account?.address}
+      />
+
       {/* 添加占位元素，防止内容被固定导航栏覆盖 */}
       <div className="h-[62px]"></div>
-      
+
       {/* 主要内容 - 上半部分：种子故事 */}
       <main className="flex-1 flex flex-col">
-
         <section className="py-16 container mx-auto px-8">
           {/* 主标题 */}
           <div className="text-center mb-10 mt-8">
             {/* 移除 motion.div，改用静态元素 */}
             <div className="inline-block relative mb-4">
-              <h1 className="text-6xl font-bold text-blue-300 mb-2 neon-text">
-                The Last of Seed
-              </h1>
+              <h1 className="text-6xl font-bold text-blue-300 mb-2 neon-text">The Last of Seed</h1>
               {/* 添加装饰线 */}
               <div className=" mb-2 mt-2 left-0 right-0 h-4 bg-blue-500/30"></div>
             </div>
-            
+
             {/* 确保文本可见 */}
             <p className="text-xl text-bule max-w-4xl mx-auto mt-4 relative z-10">
-              In the computational winter of the final epoch,
-              you are the prophesied Cultivator
+              In the computational winter of the final epoch, you are the prophesied Cultivator
             </p>
           </div>
 
@@ -218,7 +220,7 @@ export default function CombinedPage() {
                   </div>
                   <span className="text-xs font-medium text-blue-300 whitespace-nowrap">{Math.floor(progress)}%</span>
                 </div>
-                
+
                 {/* 减小种子图案大小 */}
                 <div className="scale-75 transform-origin-center -my-3">
                   <AnimatedSeed progress={progress} />
@@ -236,22 +238,18 @@ export default function CombinedPage() {
                     {isWatering ? (
                       <span className="animate-pulse">Watering...</span>
                     ) : (
-                      <span className="flex items-center">
-                         Water the seed
-                      </span>
+                      <span className="flex items-center">Water the seed</span>
                     )}
                   </Button>
                 </div>
               </CardContent>
             </Card>
           </div>
-          
         </section>
-
 
         {/* 下半部分：排行榜 */}
         <section ref={leaderboardRef} className="py-16 container mx-auto px-8 max-w  z-1">
-                    {/* 统计卡片 */}
+          {/* 统计卡片 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -298,16 +296,12 @@ export default function CombinedPage() {
                 </CardContent>
               </Card>
             </motion.div>
-
-           
           </div>
 
           {/* 排行榜卡片 */}
           <Card className="border-blue-500/30 glass-effect shadow-lg mb-8 overflow-hidden">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <span className="inline-flex items-center">
-                  育化者排行榜
-                </span>
+              <span className="inline-flex items-center">育化者排行榜</span>
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 <Button
                   variant="ghost"
@@ -331,15 +325,13 @@ export default function CombinedPage() {
                 <AnimatePresence>
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
                     {leaderboardData.map((item, index) => (
-                      <LeaderboardItem key={item.id} item={item} index={index}  />
+                      <LeaderboardItem key={item.id} item={item} index={index} />
                     ))}
                   </motion.div>
                 </AnimatePresence>
               )}
             </CardContent>
           </Card>
-
-          
         </section>
       </main>
 
