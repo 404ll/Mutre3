@@ -1,17 +1,19 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Leaf, Flame, Sparkles,  RefreshCw } from "lucide-react"
+import { Leaf, Flame, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Avatar } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { motion, AnimatePresence } from "framer-motion"
 import confetti from "canvas-confetti"
 import { AnimatedSeed } from "@/components/ui/animated-seed"
 import Image from "next/image"
-import { ConnectButton } from "@mysten/dapp-kit"
+import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit"
 import { StarBackground } from "@/components/ui/star-background"
+import { useBetterSignAndExecuteTransaction } from '@/hooks/useBetterTx'
+import { swap_HoH, watering, swap_Sui } from '@/contracts/query'
+import { queryAddressHOH } from "@/contracts/query"
+import { LeaderboardItem } from "@/components/Leaderboard"
 // 模拟排行榜数据
 const leaderboardData = [
   { id: 1, address: "0x8f7d...e5a2", tokens: 15420 },
@@ -21,78 +23,68 @@ const leaderboardData = [
   { id: 5, address: "0x7a2d...f6e9", tokens: 7650},
 ]
 
-// 排行榜项组件 - 移除动画效果
-const LeaderboardItem = ({
-  item,
-  index,
-}: {
-  item: (typeof leaderboardData)[0]
-  index: number
-}) => {
-  const getRankColor = (rank: number) => {
-    if (rank === 0) return "bg-yellow-500"
-    if (rank === 1) return "bg-gray-400"
-    if (rank === 2) return "bg-amber-600"
-    return "bg-blue-600"
-  }
-
-  return (
-    <div className="relative">
-      <div
-        className={`
-        flex items-center p-4 rounded-lg mb-3
-        ${index < 3 ? "bg-gradient-to-r from-blue-900/50 to-green-900/50 border border-blue-500/30 neon-border" : "glass-effect border border-blue-500/20"}
-        hover:shadow-md transition-all duration-300 hover:scale-[1.02] group
-      `}
-      >
-        <div
-          className={`
-          ${getRankColor(index)}
-          w-8 h-8 rounded-full flex items-center justify-center text-white font-bold mr-4
-        `}
-        >
-          {index + 1}
-        </div>
-
-        <Avatar className="h-10 w-10 border-2 border-blue-500/30 mr-4">
-          <div className="flex items-center justify-center w-full h-full bg-blue-900/50 text-blue-300 text-xs">
-            {item.address.substring(0, 2)}
-          </div>
-        </Avatar>
-
-        <div className="flex-1">
-          <div className="flex items-center">
-            <span className="font-medium text-blue-100">{item.address}</span>
-            {index < 3 && (
-              <Badge variant="outline" className="ml-2 bg-blue-900/50 text-blue-300 border-blue-500/30">
-                Top {index + 1}
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        <div className="text-right">
-          <div className="text-lg font-bold text-blue-300 neon-text">{item.tokens.toLocaleString()}</div>
-          <div className="text-xs text-gray-400">Burn Amount</div>
-        </div>
-
-        {/* 静态星星图标，仅在悬停时显示 */}
-        <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <Sparkles className="w-5 h-5 text-blue-400" />
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export default function CombinedPage() {
-  const [progress, setProgress] = useState(15)
-  const [seedState, setSeedState] = useState("休眠中") // 初始状态：休眠中
-  const [isLoading, setIsLoading] = useState(true)
-  const [showConfetti, setShowConfetti] = useState(false)
-  const [isWatering, setIsWatering] = useState(false)
-  const confettiRef = useRef<HTMLButtonElement>(null)
-  const leaderboardRef = useRef<HTMLDivElement>(null)
+    const [amountSUI, setAmountSUI] = useState(0)
+    const [amountHOH, setAmountHOH] = useState(0)
+    const account = useCurrentAccount()
+    const [progress, setProgress] = useState(15)
+    const [seedState, setSeedState] = useState("休眠中") // 初始状态：休眠中
+    const [isLoading, setIsLoading] = useState(true)
+    const [showConfetti, setShowConfetti] = useState(false)
+    const [isWatering, setIsWatering] = useState(false)
+    const confettiRef = useRef<HTMLButtonElement>(null)
+    const leaderboardRef = useRef<HTMLDivElement>(null)
+
+    const {handleSignAndExecuteTransaction: swapToHOH} = useBetterSignAndExecuteTransaction({
+            tx: swap_HoH,
+        });
+    const {handleSignAndExecuteTransaction: waterSeed} = useBetterSignAndExecuteTransaction({
+            tx: watering,
+        });
+    const {handleSignAndExecuteTransaction: swapToSUI} = useBetterSignAndExecuteTransaction({
+            tx: swap_Sui,
+        });
+
+      const handleSwapToHOH = async () => {
+              if (account?.address) {
+                      let amountInMist = amountHOH * 1000000000; // Convert to mist
+                      swapToHOH({amount:amountInMist}).onSuccess(async (response) => {
+                          console.log('Transaction successful:', response);
+                          setAmountHOH(0);
+                      }).onError((error) => {
+                          console.error('Transaction failed:', error);
+                      }).execute();
+              }
+          };
+      
+          const handleWatering = async() =>{
+              if(account?.address) {
+                  let amount = 0.1 * 1000000000;
+                  // 提取代币ID数组
+                  const userHohCoins = await queryAddressHOH(account.address);
+                  const coinIds = userHohCoins.map(coin => coin.id);
+                  waterSeed({amount:amount,coins:coinIds}).onSuccess(async(response) =>{
+                      console.log('Transaction successful:', response);
+                  }).execute();
+              }
+          }
+      
+          const handleSwapToSUI = async()=>{
+              if (account?.address) {
+               // 获取用户的 HOH 代币
+                const userHohCoins = await queryAddressHOH(account.address);
+                // 提取代币ID数组
+                  const coinIds = userHohCoins.map(coin => coin.id);
+                  let amountInMist = amountSUI * 1000000000; // Convert to mist
+                  swapToSUI({amount:amountInMist,coins:coinIds}).onSuccess(async (response) => {
+                      console.log('Transaction successful:', response);
+                      setAmountSUI(0);
+                  }).onError((error) => {
+                      console.error('Transaction failed:', error);
+                  }).execute();
+          }
+          }
 
   // 模拟种子生长进度
   useEffect(() => {
@@ -147,24 +139,6 @@ export default function CombinedPage() {
     }
   }, [showConfetti])
 
-  // 浇水功能
-  const handleWatering = () => {
-    setIsWatering(true)
-
-    // 增加生长进度
-    setProgress((prev) => Math.min(prev + 5, 100))
-
-    // 更新状态
-    setTimeout(() => {
-      if (progress > 75) setSeedState("即将发芽")
-      else if (progress > 50) setSeedState("生长中")
-      else if (progress > 25) setSeedState("萌芽中")
-      else setSeedState("休眠中")
-
-      setIsWatering(false)
-    }, 2000)
-  }
-
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -187,17 +161,18 @@ export default function CombinedPage() {
             <nav className="flex items-center space-x-2">
               <Button
                 variant="outline"
-                className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300"
+                className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300 text-lg h-8"
               >
                 mint
               </Button>
               <Button
                 variant="outline"
-                className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300"
+                className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300 text-lg h-8"
               >
                 swap
               </Button>
               <ConnectButton 
+                className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300 text-lg h-8"
               />
             </nav>
           </div>
@@ -250,11 +225,11 @@ export default function CombinedPage() {
                 </div>
 
                 {/* 浇水按钮更小 */}
-                <div className="mt-0 flex justify-center">
+                <div className="mb-2 flex justify-center">
                   <Button
                     size="lg"
                     variant="outline"
-                    className="border-blue-500/30 hover:bg-green hover:text-blue-300 transition-all duration-300 text-blue-300 text-sm px-2 py-0 h-6 min-h-0"
+                    className="border-blue-500/30 hover:bg-green-500/50 active:bg-green-500 hover:text-blue-300 transition-all duration-300 text-blue-300 text-lg px-2 py-0 min-h-0 h-8"
                     onClick={handleWatering}
                     disabled={isWatering || progress >= 100}
                   >
@@ -262,7 +237,7 @@ export default function CombinedPage() {
                       <span className="animate-pulse">Watering...</span>
                     ) : (
                       <span className="flex items-center">
-                         Water
+                         Water the seed
                       </span>
                     )}
                   </Button>
