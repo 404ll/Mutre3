@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, use } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Leaf, Flame, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -11,20 +11,14 @@ import Image from "next/image"
 import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit"
 import { StarBackground } from "@/components/ui/star-background"
 import { useBetterSignAndExecuteTransaction } from "@/hooks/useBetterTx"
-import { swap_HoH, watering, swap_Sui, queryWaterEventByTime } from "@/contracts/query"
+import { swap_HoH, watering, swap_Sui, queryAllCultivator, queryWaterEvent, querySeedBurn } from "@/contracts/query"
 import { queryAddressHOH } from "@/contracts/query"
 import { LeaderboardItem } from "@/components/Leaderboard"
 import { SwapModal } from "@/components/swap-modal"
 import { WateringEvent } from "@/types/contract"
 
 // 模拟排行榜数据
-const leaderboardData = [
-  { id: 1, address: "0x8f7d...e5a2", tokens: 15420 },
-  { id: 2, address: "0x3a9c...b7f1", tokens: 12350 },
-  { id: 3, address: "0x6e2b...9d4c", tokens: 9870 },
-  { id: 4, address: "0x1f5e...c3d8", tokens: 8540 },
-  { id: 5, address: "0x7a2d...f6e9", tokens: 7650 },
-]
+
 
 export default function CombinedPage() {
   const [amountSUI, setAmountSUI] = useState(0)
@@ -39,6 +33,8 @@ export default function CombinedPage() {
   const confettiRef = useRef<HTMLButtonElement>(null)
   const leaderboardRef = useRef<HTMLDivElement>(null)
   const [recentEvent, setRecentEvent] = useState<WateringEvent[]>([])
+  const [leaderboardData, setLeaderboardData] = useState<{ address: string; burnAmount: number }[]>([]);
+  const [burnamount, setBurnAmount] = useState(0);
 
   const { handleSignAndExecuteTransaction: swapToHOH } = useBetterSignAndExecuteTransaction({
     tx: swap_HoH,
@@ -151,10 +147,10 @@ export default function CombinedPage() {
     }
   }, [showConfetti])
 
-  //查询24小时内的浇水事件
+  //查询浇水事件
   useEffect(() => {
       const fetchRecentEvents = async () => {
-          const events = await queryWaterEventByTime()
+          const events = await queryWaterEvent()
           setRecentEvent(events)
           console.log("Recent Watering Events:", events)
       }
@@ -165,6 +161,48 @@ export default function CombinedPage() {
   
       return () => clearInterval(recentEvent)
   }, [])
+
+  // 获取排行榜数据
+  useEffect(() => {
+    const fetchCultivators = async () => {
+      try {
+        setIsLoading(true);
+        const cultivators = await queryAllCultivator();
+        setLeaderboardData(cultivators.filter((cultivator): cultivator is { address: string; burnAmount: number } => cultivator !== null));
+        const burnamount = await querySeedBurn();
+        setBurnAmount(burnamount);
+        console.log("Burn amount:", burnamount);
+        console.log("Cultivators fetched:", cultivators);
+      } catch (error) {
+        console.error("Failed to fetch cultivators:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCultivators();
+  }, []);
+
+  const refreshLeaderboard = async () => {
+    try {
+      setIsLoading(true);
+      const cultivators = await queryAllCultivator();
+      setLeaderboardData(
+        cultivators.filter(
+          (cultivator): cultivator is { address: string; burnAmount: number } =>
+            cultivator !== null
+        )
+      );
+      const burnamount = await querySeedBurn();
+      setBurnAmount(burnamount);
+      console.log("Burn amount refreshed:", burnamount);
+      console.log("Cultivators refreshed:", cultivators);
+    } catch (error) {
+      console.error("Failed to refresh leaderboard:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -201,10 +239,6 @@ export default function CombinedPage() {
         onSwapToSUI={handleSwapToSUI}
         address={account?.address}
       />
-
-     
-
-     
 
       {/* 主要内容 - 上半部分：种子故事 */}
       <main className="flex-1 flex flex-col items-center justify-center">
@@ -306,7 +340,7 @@ export default function CombinedPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-400">总育化者</p>
-                      <p className="text-3xl font-bold text-blue-300 neon-text">1,254</p>
+                      <p className="text-3xl font-bold text-blue-300 neon-text">{leaderboardData.length}</p>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-500/30">
                       <Leaf className="w-6 h-6 text-green-400" />
@@ -329,7 +363,7 @@ export default function CombinedPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-400">总销毁量</p>
-                      <p className="text-3xl font-bold text-blue-300 neon-text">78,450</p>
+                      <p className="text-3xl font-bold text-blue-300 neon-text">{burnamount}</p>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-500/30">
                       <Flame className="w-6 h-6 text-orange-400" />
@@ -352,7 +386,7 @@ export default function CombinedPage() {
                   variant="ghost"
                   size="sm"
                   className="text-blue-300 hover:text-blue-100 hover:bg-blue-900/50"
-                  onClick={() => setShowConfetti(true)}
+                  onClick={refreshLeaderboard}
                   ref={confettiRef}
                 >
                   <RefreshCw className="w-4 h-4 mr-1" /> 刷新
@@ -367,13 +401,15 @@ export default function CombinedPage() {
                   <p className="text-blue-300">加载排行榜数据中...</p>
                 </div>
               ) : (
-                <AnimatePresence>
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
-                    {leaderboardData.map((item, index) => (
-                      <LeaderboardItem key={item.id} item={item} index={index} />
-                    ))}
-                  </motion.div>
-                </AnimatePresence>
+                <div>
+                  {leaderboardData.length > 0 ? (
+                    leaderboardData.map((item, index) => (
+                      <LeaderboardItem key={index} item={item} index={index} />
+                    ))
+                  ) : (
+                    <p className="text-blue-300 text-center">暂无数据</p>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>

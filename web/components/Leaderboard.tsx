@@ -6,7 +6,7 @@ import { Sparkles } from "lucide-react";
 type LeaderboardItem = {
   id: string | number;
   address: string;
-  tokens: number;
+  burnAmount: number;
 };
 
 // 排行榜项组件 - 移除动画效果
@@ -23,7 +23,6 @@ export const LeaderboardItem = ({
     if (rank === 2) return "bg-amber-600";
     return "bg-blue-600";
   };
-
   return (
     <div className="relative">
       <div
@@ -42,25 +41,14 @@ export const LeaderboardItem = ({
           {index + 1}
         </div>
 
-        <Avatar className="h-10 w-10 border-2 border-blue-500/30 mr-4">
-          <div className="flex items-center justify-center w-full h-full bg-blue-900/50 text-blue-300 text-xs">
-            {item.address.substring(0, 2)}
-          </div>
-        </Avatar>
-
         <div className="flex-1">
           <div className="flex items-center">
             <span className="font-medium text-blue-100">{item.address}</span>
-            {index < 3 && (
-              <Badge variant="outline" className="ml-2 bg-blue-900/50 text-blue-300 border-blue-500/30">
-                Top {index + 1}
-              </Badge>
-            )}
           </div>
         </div>
 
         <div className="text-right">
-          <div className="text-lg font-bold text-blue-300 neon-text">{item.tokens.toLocaleString()}</div>
+          <div className="text-lg font-bold text-blue-300 neon-text">{item.burnAmount}</div>
           <div className="text-xs text-gray-400">Burn Amount</div>
         </div>
 

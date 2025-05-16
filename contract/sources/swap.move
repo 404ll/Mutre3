@@ -9,6 +9,8 @@ use sui::{
     event::emit,
     };
 use contract::hoh::{HOH,HOHTreasuryCap,hoh_mint,hoh_burn,AdminCap};
+use sui::table::add;
+use sui::pay;
 
 // === Errors ===
 const EInvaildAmount: u64 = 0;
@@ -26,7 +28,7 @@ public struct Pool has key{
 
 public struct Seed has key{
     id: UID,
-    cultivator: Table<address, u64>,
+    cultivators: Table<address, u64>,
     hoh_burn:u64,
 }
 
@@ -46,7 +48,7 @@ fun init(ctx: &mut TxContext){
      //初始化种子
     let seed = Seed {
         id: object::new(ctx),
-        cultivator: table::new(ctx),
+        cultivators: table::new(ctx),
         hoh_burn: 0,
     };
 
@@ -110,8 +112,11 @@ entry fun watering (
 
     //在种子中放入育化者的名字
     let cultivator = ctx.sender();
-    if(!table::contains(&seed.cultivator, cultivator)){
-        table::add (&mut seed.cultivator, cultivator, payment_amount);
+    if(!table::contains(&seed.cultivators, cultivator)) {
+        table::add(&mut seed.cultivators, cultivator, payment_amount);
+    }else{
+        let old_amount = table::borrow_mut(&mut seed.cultivators, cultivator);
+        *old_amount = *old_amount + payment_amount;
     };
     seed.hoh_burn = payment_amount + seed.hoh_burn;
 

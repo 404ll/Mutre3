@@ -4,7 +4,6 @@ import { SuiObjectResponse,CoinMetadata } from "@mysten/sui/client";
 import { categorizeSuiObjects, CategorizedObjects } from "@/utils/assetsHelpers";
 import { SuiCoin } from "@/types/contract";
 import { WateringEvent } from "@/types/contract";
-import { inter } from "@/app/fonts";
 
 const HOH_TYPE = "0xb76167920a64538ac99f7d682413a775505b1f767c0fec17647453270f3d7d8b::hoh::HOH"
 
@@ -212,7 +211,7 @@ export const queryAddressHOH = async(address: string) => {
 //   hoh_burn:u64,
 // }
 
-export const queryAllCultivator = async() => {
+export const queryAllCultivator = async () => {
   const obj = await suiClient.getObject({
     id: networkConfig.testnet.variables.Seed,
     options: {
@@ -222,56 +221,101 @@ export const queryAllCultivator = async() => {
   });
 
   console.log("seed obj", obj);
-  
+
   if (obj.data && obj.data.content && "fields" in obj.data.content) {
     const table = (obj.data.content as any).fields.cultivator;
     console.log("Cultivator table:", table);
-    
-    const tableId = table.fields?.id.id;
+
+    // 使用 table 本身作为 parentId
+    const tableId = table.id || table.fields?.id?.id || table.fields?.tableId;
+    if (!tableId) {
+      throw new Error("Unable to determine tableId from cultivator table");
+    }
     console.log("tableId", tableId);
 
-    // 获取动态字段列表
-    const tableDatas = await suiClient.getDynamicFields({
-      parentId: tableId,
-    });
-    console.log("tableDatas", tableDatas);
+    // 使用分页获取所有动态字段
+    let hasNextPage = true;
+    let cursor: string | null = null;
+    let allFields: any[] = [];
 
-    // 使用 Promise.all 正确处理异步查询
-    const tableDataPromises = tableDatas.data.map(async (item) => {
-      const fieldObject = await suiClient.getDynamicFieldObject({
+    while (hasNextPage) {
+      const tableDatas = await suiClient.getDynamicFields({
         parentId: tableId,
-        name: item.name,
+        cursor: cursor,
+        limit: 100, // 设置较大的限制以减少请求次数
       });
-      
-      // 返回处理后的数据
-      return {
-        name: item.name,
-        fieldObject: fieldObject
-      };
-    });
-    
-    // 等待所有查询完成
-    const tableData = await Promise.all(tableDataPromises);
-    console.log("tableData", tableData);
-    
-    // 构建培育者数据
-    const cultivators = tableData.map(item => {
-      if (item.fieldObject.data && 
-          item.fieldObject.data.content && 
-          "fields" in item.fieldObject.data.content) {
-        
-        // 从动态字段对象中提取数值
-        const value = (item.fieldObject.data.content as any).fields.value/1000000000;
-        
-        return {
-          address: item.name.value, // 地址
-          burnAmount: value,        // 贡献数量
-        };
+
+      allFields = allFields.concat(tableDatas.data);
+
+      hasNextPage = tableDatas.hasNextPage;
+      cursor = tableDatas.nextCursor;
+
+      if (hasNextPage) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
-      return null;
-    }).filter(Boolean); // 过滤掉可能的null值
-    
+    }
+
+    console.log(`总共发现 ${allFields.length} 个培育者`);
+
+    const batchSize = 20;
+    const cultivators = [];
+
+    for (let i = 0; i < allFields.length; i += batchSize) {
+      const batch = allFields.slice(i, i + batchSize);
+
+      const batchPromises = batch.map(async (item) => {
+        const fieldObject = await suiClient.getDynamicFieldObject({
+          parentId: tableId,
+          name: item.name,
+        });
+
+        if (
+          fieldObject.data &&
+          fieldObject.data.content &&
+          "fields" in fieldObject.data.content
+        ) {
+          const value =
+            (fieldObject.data.content as any).fields.value / 1000000000;
+          return {
+            address: item.name.value,
+            burnAmount: value,
+          };
+        }
+        return null;
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      cultivators.push(...batchResults.filter(Boolean));
+
+      if (i + batchSize < allFields.length) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+
+    cultivators
+      .filter((a) => a !== null)
+      .sort((a, b) => b.burnAmount - a.burnAmount);
+
     return cultivators;
+  } else {
+    throw new Error("Invalid object structure: 'fields' not found in content");
+  }
+}
+
+export const querySeedBurn = async () => { 
+  const obj = await suiClient.getObject({
+    id: networkConfig.testnet.variables.Seed,
+    options: {
+      showContent: true,
+      showType: true,
+    },
+  });
+
+
+  if (obj.data && obj.data.content && "fields" in obj.data.content) {
+    const seed = (obj.data.content as any).fields;
+    console.log("Seed:", seed);
+    return seed.hoh_burn / 1000000000; // 转换为正常单位
   } else {
     throw new Error("Invalid object structure: 'fields' not found in content");
   }

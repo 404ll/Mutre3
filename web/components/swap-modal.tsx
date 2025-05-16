@@ -47,10 +47,9 @@ export const SwapModal = ({ isOpen, onClose, onSwapToHOH, onSwapToSUI,address }:
           } catch (error) {
             console.error("Failed to fetch balances:", error)
           }
-          
+
         }
       }
-  
       fetchBalance()
     }, [isOpen, address])
 
