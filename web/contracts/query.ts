@@ -5,7 +5,7 @@ import { categorizeSuiObjects, CategorizedObjects } from "@/utils/assetsHelpers"
 import { SuiCoin } from "@/types/contract";
 import { WateringEvent } from "@/types/contract";
 
-const HOH_TYPE = "0xb76167920a64538ac99f7d682413a775505b1f767c0fec17647453270f3d7d8b::hoh::HOH"
+const HOH_TYPE = "0x8a774b80ea67ee7e33be56572880db0faaa6d626fa2afb81e739024da57d10cb::hoh::HOH"
 
 export const getUserProfile = async (address: string): Promise<CategorizedObjects> => {
   if (!isValidSuiAddress(address)) {
@@ -223,13 +223,20 @@ export const queryAllCultivator = async () => {
   console.log("seed obj", obj);
 
   if (obj.data && obj.data.content && "fields" in obj.data.content) {
-    const table = (obj.data.content as any).fields.cultivator;
+    const table = (obj.data.content as any).fields.cultivators;
     console.log("Cultivator table:", table);
 
-    // 使用 table 本身作为 parentId
-    const tableId = table.id || table.fields?.id?.id || table.fields?.tableId;
+    // 检查 table 是否存在
+    if (!table) {
+      console.warn("Cultivator table is undefined");
+      return []; // 返回空数组
+    }
+
+    // 根据实际结构获取 tableId
+    const tableId = table.fields?.id?.id || table.fields?.tableId || table.id;
     if (!tableId) {
-      throw new Error("Unable to determine tableId from cultivator table");
+      console.warn("Unable to determine tableId from cultivator table");
+      return []; // 返回空数组
     }
     console.log("tableId", tableId);
 
@@ -242,7 +249,7 @@ export const queryAllCultivator = async () => {
       const tableDatas = await suiClient.getDynamicFields({
         parentId: tableId,
         cursor: cursor,
-        limit: 100, // 设置较大的限制以减少请求次数
+        limit: 10, 
       });
 
       allFields = allFields.concat(tableDatas.data);
@@ -256,6 +263,11 @@ export const queryAllCultivator = async () => {
     }
 
     console.log(`总共发现 ${allFields.length} 个培育者`);
+
+    if (allFields.length === 0) {
+      console.warn("No cultivators found");
+      return []; // 返回空数组
+    }
 
     const batchSize = 20;
     const cultivators = [];
@@ -298,7 +310,8 @@ export const queryAllCultivator = async () => {
 
     return cultivators;
   } else {
-    throw new Error("Invalid object structure: 'fields' not found in content");
+    console.warn("Invalid object structure: 'fields' not found in content");
+    return []; // 返回空数组
   }
 }
 

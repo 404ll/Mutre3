@@ -16,7 +16,7 @@ import { queryAddressHOH } from "@/contracts/query"
 import { LeaderboardItem } from "@/components/Leaderboard"
 import { SwapModal } from "@/components/swap-modal"
 import { WateringEvent } from "@/types/contract"
-
+import { EventNotificationBar } from "@/components/EventBar"
 // 模拟排行榜数据
 
 
@@ -181,7 +181,7 @@ export default function CombinedPage() {
     };
 
     fetchCultivators();
-  }, []);
+  }, [account]);
 
   const refreshLeaderboard = async () => {
     try {
@@ -244,33 +244,8 @@ export default function CombinedPage() {
       <main className="flex-1 flex flex-col items-center justify-center">
         <section className="py-16 container mx-auto px-8">
              {/* 事件通知栏 */}
-      <div className="mt-20  w-full bg-gradient-to-r from-blue-900/70 to-green-900/70 border-b border-blue-500/30 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center">
-                <span className="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse mr-2"></span>
-                <span className="text-sm font-medium text-blue-300">实时事件</span>
-              </div>
-              <div className="hidden md:flex overflow-hidden relative w-full max-w-2xl">
-                <div className="animate-marquee whitespace-nowrap">
-                  <span className="text-sm text-blue-100 mx-4">
-                    🌱 新种子已被种植 - 0x7a2d...f6e9 刚刚贡献了 50 HOH
-                  </span>
-                  <span className="text-sm text-blue-100 mx-4">🌿 种子成长里程碑 - 全网种子总数已达到 10,000</span>
-                  <span className="text-sm text-blue-100 mx-4">💧 浇水活动进行中 - 参与浇水可获得额外奖励</span>
-                  <span className="text-sm text-blue-100 mx-4">🔄 新的交换比率已生效 - 1 SUI = 3 HOH</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <span className="text-xs text-blue-300 bg-blue-900/50 px-2 py-1 rounded-full border border-blue-500/30">
-                HOH 价格: 0.33 SUI
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* 事件通知栏 */}
+      <EventNotificationBar />
 
           <div className="text-center mb-10 mt-8">
             <div className="inline-block relative mb-4">
