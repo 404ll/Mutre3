@@ -179,12 +179,16 @@ export default function CombinedPage() {
     try {
       setIsLoading(true);
       const cultivators = await queryAllCultivator();
+      
+      // 过滤非空数据，并按照 burnAmount 降序排序
       setLeaderboardData(
-        cultivators.filter(
-          (cultivator): cultivator is { address: string; burnAmount: number } =>
+        cultivators
+          .filter((cultivator): cultivator is { address: string; burnAmount: number } => 
             cultivator !== null
-        )
+          )
+          .sort((a, b) => b.burnAmount - a.burnAmount) // 降序排序
       );
+      
       const burnamount = await querySeedBurn();
       setBurnAmount(burnamount);
       console.log("Burn amount refreshed:", burnamount);
@@ -252,7 +256,10 @@ export default function CombinedPage() {
       const cultivatorContribution = Math.min(leaderboardData.length / targetCultivators, 1) * 0.4 // 育化者贡献40%
       const burnContribution = Math.min(burnamount / targetBurnAmount, 1) * 0.6 // 销毁量贡献60%
 
-      const calculatedProgress = Math.min((cultivatorContribution + burnContribution) * 100 * 0.75, 85)
+      const calculatedProgress = Math.max(
+        Math.min((cultivatorContribution + burnContribution) * 100 * 0.75, 85),
+        5 // 最小显示5%
+      );
 
       // 更新进度和状态
       setProgress(calculatedProgress)
@@ -272,7 +279,16 @@ export default function CombinedPage() {
       try {
         setIsLoading(true);
         const cultivators = await queryAllCultivator();
-        setLeaderboardData(cultivators.filter((cultivator): cultivator is { address: string; burnAmount: number } => cultivator !== null));
+        
+        // 过滤非空数据，并按照 burnAmount 降序排序
+        setLeaderboardData(
+          cultivators
+            .filter((cultivator): cultivator is { address: string; burnAmount: number } => 
+              cultivator !== null
+            )
+            .sort((a, b) => b.burnAmount - a.burnAmount) // 降序排序
+        );
+        
         const burnamount = await querySeedBurn();
         setBurnAmount(burnamount);
         console.log("Burn amount:", burnamount);
@@ -305,7 +321,7 @@ export default function CombinedPage() {
             <nav className="flex items-center space-x-2">
               <Button
                 variant="outline"
-                className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300 text-lg h-8"
+                className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300 text-lg h-8 font-bold text-blue-300 neon-text"
                 onClick={() => setIsSwapModalOpen(true)}
               >
                 swap
@@ -338,7 +354,7 @@ export default function CombinedPage() {
             </div>
 
             {/* 确保文本可见 */}
-            <p className="text-xl text-blue max-w-4xl mx-auto mt-4 relative z-10">
+            <p className="text-xl max-w-4xl mx-auto mt-2 relative z-10 font-bold text-blue-300 neon-text">
               In the computational winter of the final epoch, you are the prophesied Cultivator
             </p>
           </div>
@@ -376,7 +392,7 @@ export default function CombinedPage() {
                     {isWatering ? (
                       <span className="animate-pulse">Watering...</span>
                     ) : (
-                      <span className="flex items-center">Water the seed</span>
+                      <span className="flex items-center font-bold text-blue-300 neon-text">Water the seed</span>
                     )}
                   </Button>
                 </div>
@@ -439,7 +455,7 @@ export default function CombinedPage() {
           {/* 排行榜卡片 */}
           <Card className="border-blue-500/30 glass-effect shadow-lg mb-8 overflow-hidden">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <span className="inline-flex items-center">Cultivators</span>
+              <span className="inline-flex items-center text-2xl font-bold text-blue-300 neon-text">Cultivators</span>
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 <Button
                   variant="ghost"
