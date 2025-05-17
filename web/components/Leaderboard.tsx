@@ -4,7 +4,6 @@ import { Sparkles } from "lucide-react";
 
 // 定义 leaderboardData 类型
 type LeaderboardItem = {
-  id: string | number;
   address: string;
   burnAmount: number;
 };

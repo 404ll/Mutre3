@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Leaf, Flame, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import confetti from "canvas-confetti"
 import { AnimatedSeed} from "@/components/ui/animated-seed"
 import Image from "next/image"
@@ -17,16 +17,19 @@ import { LeaderboardItem } from "@/components/Leaderboard"
 import { SwapModal } from "@/components/swap-modal"
 import { WateringEvent } from "@/types/contract"
 import { EventNotificationBar } from "@/components/EventBar"
-// 模拟排行榜数据
-
+import { useToast } from "@/hooks/use-toast"
+import { CustomConnectButton } from "@/components/CustomConnectButton"
 
 export default function CombinedPage() {
+  // Change this declaration:
+  const { toast } = useToast()
+
   const [amountSUI, setAmountSUI] = useState(0)
   const [amountHOH, setAmountHOH] = useState(0)
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false)
   const account = useCurrentAccount()
   const [progress, setProgress] = useState(15)
-  const [seedState, setSeedState] = useState("休眠中") // 初始状态：休眠中
+  const [seedState, setSeedState] = useState("Dormant") 
   const [isLoading, setIsLoading] = useState(true)
   const [showConfetti, setShowConfetti] = useState(false)
   const [isWatering, setIsWatering] = useState(false)
@@ -35,7 +38,7 @@ export default function CombinedPage() {
   const [recentEvent, setRecentEvent] = useState<WateringEvent[]>([])
   const [leaderboardData, setLeaderboardData] = useState<{ address: string; burnAmount: number }[]>([]);
   const [burnamount, setBurnAmount] = useState(0);
-
+  
   const { handleSignAndExecuteTransaction: swapToHOH } = useBetterSignAndExecuteTransaction({
     tx: swap_HoH,
   })
@@ -48,14 +51,26 @@ export default function CombinedPage() {
 
   const handleSwapToHOH = async (amount: number) => {
     if (account?.address) {
-      const amountInMist = amount * 1000000000 // Convert to mist
+      const amountInMist = amount * 1000000000
       swapToHOH({ amount: amountInMist })
         .onSuccess(async (response) => {
           console.log("Transaction successful:", response)
           setAmountHOH(0)
+          // 显示交易成功通知
+          toast({
+            title: "Transaction Successful",
+            description: `Successfully swapped ${amount} SUI to HOH`,
+            variant: "default",
+          })
         })
         .onError((error) => {
           console.error("Transaction failed:", error)
+          // 显示交易失败通知
+          toast({
+            title: "Transaction Failed",
+            description: "Failed to swap SUI to HOH. Please try again.",
+            variant: "destructive",
+          })
         })
         .execute()
     }
@@ -63,58 +78,123 @@ export default function CombinedPage() {
 
   const handleWatering = async () => {
     if (account?.address) {
+      setIsWatering(true)
       const amount = 0.1 * 1000000000
-      // 提取代币ID数组
-      const userHohCoins = await queryAddressHOH(account.address)
-      const coinIds = userHohCoins.map((coin) => coin.id)
-      waterSeed({ amount: amount, coins: coinIds })
-        .onSuccess(async (response) => {
-          console.log("Transaction successful:", response)
+      try {
+        // 检查HOH余额是否足够
+        const userHohCoins = await queryAddressHOH(account.address)
+        const userHOHBalance = userHohCoins.reduce((acc, coin) => acc + coin.balance, 0)
+        console.log("User HOH Coins:", userHOHBalance)
+        if (Number(userHOHBalance) < amount) {
+          toast({
+            title: "Insufficient HOH Balance",
+            description: "You need at least 0.1 HOH to water the seed. Please swap more HOH first.",
+            variant: "destructive",
+          })
+          setIsWatering(false)
+          return
+        }
+        
+        // 提取代币ID数组
+        const coinIds = userHohCoins.map((coin) => coin.id)
+        waterSeed({ amount: amount, coins: coinIds })
+          .onSuccess(async (response) => {
+            console.log("Transaction successful:", response)
+            // 显示浇水成功通知
+            toast({
+              title: "Watering Successful",
+              description: "You've successfully watered the seed with 0.1 HOH!",
+              variant: "default",
+            })
+            // 刷新排行榜以显示最新数据
+            refreshLeaderboard()
+          })
+          .onError((error) => {
+            console.error("Transaction failed:", error)
+            // 显示浇水失败通知
+            toast({
+              title: "Watering Failed",
+              description: "Failed to water the seed. Please try again.",
+              variant: "destructive",
+            })
+          })        
+          .execute()
+          setIsWatering(false)
+
+      } catch (error) {
+        console.error("Error preparing watering transaction:", error)
+        toast({
+          title: "Transaction Error",
+          description: "Failed to prepare watering transaction. Please try again.",
+          variant: "destructive",
         })
-        .execute()
+        setIsWatering(false)
+      }
     }
   }
 
   const handleSwapToSUI = async (amount: number) => {
     if (account?.address) {
-      // 获取用户的 HOH 代币
-      const userHohCoins = await queryAddressHOH(account.address)
-      // 提取代币ID数组
-      const coinIds = userHohCoins.map((coin) => coin.id)
-      const amountInMist = amount * 1000000000 // Convert to mist
-      swapToSUI({ amount: amountInMist, coins: coinIds })
-        .onSuccess(async (response) => {
-          console.log("Transaction successful:", response)
-          setAmountSUI(0)
+
+      try {
+        // 获取用户的 HOH 代币
+        const userHohCoins = await queryAddressHOH(account.address)
+        
+        // 提取代币ID数组
+        const coinIds = userHohCoins.map((coin) => coin.id)
+        const amountInMist = amount * 1000000000
+        swapToSUI({ amount: amountInMist, coins: coinIds })
+          .onSuccess(async (response) => {
+            console.log("Transaction successful:", response)
+            setAmountSUI(0)
+            // 显示交易成功通知
+            toast({
+              title: "Transaction Successful",
+              description: `Successfully swapped ${amount} HOH to SUI`,
+              variant: "default",
+            })
+          })
+          .onError((error) => {
+            console.error("Transaction failed:", error)
+            // 显示交易失败通知
+            toast({
+              title: "Transaction Failed",
+              description: "Failed to swap HOH to SUI. Please try again.",
+              variant: "destructive",
+            })
+          })
+          .execute()
+      } catch (error) {
+        console.error("Error preparing swap transaction:", error)
+        toast({
+          title: "Transaction Error",
+          description: "Failed to prepare swap transaction. Please try again.",
+          variant: "destructive",
         })
-        .onError((error) => {
-          console.error("Transaction failed:", error)
-        })
-        .execute()
+      }
     }
   }
-
-  // 模拟种子生长进度
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setProgress((prevProgress) => {
-        if (prevProgress >= 100) {
-          clearInterval(timer)
-          setSeedState("已发芽")
-          return 100
-        }
-
-        // 更新种子状态
-        if (prevProgress > 75) setSeedState("即将发芽")
-        else if (prevProgress > 50) setSeedState("生长中")
-        else if (prevProgress > 25) setSeedState("萌芽中")
-
-        return prevProgress + 0.2
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [])
+  
+  const refreshLeaderboard = async () => {
+    try {
+      setIsLoading(true);
+      const cultivators = await queryAllCultivator();
+      setLeaderboardData(
+        cultivators.filter(
+          (cultivator): cultivator is { address: string; burnAmount: number } =>
+            cultivator !== null
+        )
+      );
+      const burnamount = await querySeedBurn();
+      setBurnAmount(burnamount);
+      console.log("Burn amount refreshed:", burnamount);
+      console.log("Cultivators refreshed:", cultivators);
+    } catch (error) {
+      console.error("Failed to refresh leaderboard:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // 模拟加载
   useEffect(() => {
@@ -162,6 +242,30 @@ export default function CombinedPage() {
       return () => clearInterval(recentEvent)
   }, [])
 
+   // 根据育化者数量和销毁量计算种子发芽进度
+   useEffect(() => {
+    if (!isLoading) {
+      const targetCultivators = 100 // 假设需要100个育化者才能达到最大贡献
+      const targetBurnAmount = 10000 // 假设需要10000的销毁量才能达到最大贡献
+
+      // 计算两个因素的贡献比例
+      const cultivatorContribution = Math.min(leaderboardData.length / targetCultivators, 1) * 0.4 // 育化者贡献40%
+      const burnContribution = Math.min(burnamount / targetBurnAmount, 1) * 0.6 // 销毁量贡献60%
+
+      const calculatedProgress = Math.min((cultivatorContribution + burnContribution) * 100 * 0.75, 85)
+
+      // 更新进度和状态
+      setProgress(calculatedProgress)
+
+      // 更新种子状态
+      if (calculatedProgress > 60) setSeedState("About to Sprout")
+      else if (calculatedProgress > 40) setSeedState("Growing")
+      else if (calculatedProgress > 20) setSeedState("Budding")
+      else setSeedState("Dormant")
+
+    }
+  }, [isLoading, leaderboardData.length, burnamount])
+
   // 获取排行榜数据
   useEffect(() => {
     const fetchCultivators = async () => {
@@ -183,26 +287,7 @@ export default function CombinedPage() {
     fetchCultivators();
   }, [account]);
 
-  const refreshLeaderboard = async () => {
-    try {
-      setIsLoading(true);
-      const cultivators = await queryAllCultivator();
-      setLeaderboardData(
-        cultivators.filter(
-          (cultivator): cultivator is { address: string; burnAmount: number } =>
-            cultivator !== null
-        )
-      );
-      const burnamount = await querySeedBurn();
-      setBurnAmount(burnamount);
-      console.log("Burn amount refreshed:", burnamount);
-      console.log("Cultivators refreshed:", cultivators);
-    } catch (error) {
-      console.error("Failed to refresh leaderboard:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -225,7 +310,7 @@ export default function CombinedPage() {
               >
                 swap
               </Button>
-              <ConnectButton className="border-blue-500/30 hover:bg-blue-900/50 hover:text-blue-300 transition-all duration-300 text-blue-300 text-lg h-8" />
+              <CustomConnectButton />
             </nav>
           </div>
         </div>
@@ -246,7 +331,6 @@ export default function CombinedPage() {
              {/* 事件通知栏 */}
       {/* 事件通知栏 */}
       <EventNotificationBar />
-
           <div className="text-center mb-10 mt-8">
             <div className="inline-block relative mb-4">
               <h1 className="text-6xl font-bold text-blue-300 mb-2 neon-text">The Last of Seed</h1>
@@ -302,7 +386,7 @@ export default function CombinedPage() {
         </section>
 
         {/* 下半部分：排行榜 */}
-        <section ref={leaderboardRef} className="py-16 container mx-auto px-8 max-w  z-1">
+        <section ref={leaderboardRef} className="py-16 container mx-auto px-16 max-w z-1">
           {/* 统计卡片 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <motion.div
@@ -314,7 +398,7 @@ export default function CombinedPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-400">总育化者</p>
+                      <p className="text-sm text-gray-400">Total Cultivators</p>
                       <p className="text-3xl font-bold text-blue-300 neon-text">{leaderboardData.length}</p>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-500/30">
@@ -322,7 +406,7 @@ export default function CombinedPage() {
                     </div>
                   </div>
                   <div className="mt-4 text-xs text-gray-400">
-                    较昨日 <span className="text-blue-400">+12%</span>
+                    Since yesterday <span className="text-blue-400">+12%</span>
                   </div>
                 </CardContent>
               </Card>
@@ -337,7 +421,7 @@ export default function CombinedPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-400">总销毁量</p>
+                      <p className="text-sm text-gray-400">Total Burned</p>
                       <p className="text-3xl font-bold text-blue-300 neon-text">{burnamount}</p>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-500/30">
@@ -345,7 +429,7 @@ export default function CombinedPage() {
                     </div>
                   </div>
                   <div className="mt-4 text-xs text-gray-400">
-                    较昨日 <span className="text-blue-400">+8%</span>
+                    Since yesterday <span className="text-blue-400">+8%</span>
                   </div>
                 </CardContent>
               </Card>
@@ -355,7 +439,7 @@ export default function CombinedPage() {
           {/* 排行榜卡片 */}
           <Card className="border-blue-500/30 glass-effect shadow-lg mb-8 overflow-hidden">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <span className="inline-flex items-center">育化者排行榜</span>
+              <span className="inline-flex items-center">Cultivators</span>
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                 <Button
                   variant="ghost"
@@ -364,7 +448,7 @@ export default function CombinedPage() {
                   onClick={refreshLeaderboard}
                   ref={confettiRef}
                 >
-                  <RefreshCw className="w-4 h-4 mr-1" /> 刷新
+                  <RefreshCw className="w-4 h-4 mr-1" /> refresh
                 </Button>
               </motion.div>
             </CardHeader>
@@ -373,7 +457,7 @@ export default function CombinedPage() {
               {isLoading ? (
                 <div className="py-10 flex flex-col items-center">
                   <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-                  <p className="text-blue-300">加载排行榜数据中...</p>
+                  <p className="text-blue-300">Loading...</p>
                 </div>
               ) : (
                 <div>
@@ -382,7 +466,7 @@ export default function CombinedPage() {
                       <LeaderboardItem key={index} item={item} index={index} />
                     ))
                   ) : (
-                    <p className="text-blue-300 text-center">暂无数据</p>
+                    <p className="text-blue-300 text-center">No data available</p>
                   )}
                 </div>
               )}
@@ -394,7 +478,7 @@ export default function CombinedPage() {
       {/* 页脚 */}
       <footer className="py-4 border-t border-blue-500/30 glass-effect relative z-1">
         <div className="container mx-auto px-4 text-center text-sm text-gray-400">
-          <p>© 2025 最后的种子 | The Last of Seed</p>
+          <p>© 2025 The Last of Seed</p>
         </div>
       </footer>
     </div>

@@ -66,17 +66,7 @@ export const queryWaterEvent = async(options?: {
     // 在客户端过滤时间范围
     let filteredEvents = events.data;
     
-    // 如果提供了时间范围，在客户端进行过滤
-    if (options?.timeRange) {
-      const startTime = options.timeRange.startTime.toString();
-      const endTime = options.timeRange.endTime.toString();
-      
-      filteredEvents = filteredEvents.filter(event => {
-        const eventTime = Number(event.timestampMs);
-        return eventTime >= startTime && eventTime <= endTime;
-      });
-    }
-    
+  
     // 如果提供了发送者，在客户端进行过滤
     if (options?.sender) {
       filteredEvents = filteredEvents.filter(event => 
@@ -181,11 +171,6 @@ export const queryAddressHOH = async(address: string) => {
     coinType: HOH_TYPE,
   });
   console.log("balance", balanceResponse.totalBalance);
-  
-  // 如果没有余额，返回空数组
-  if (Number(balanceResponse.totalBalance) <= 0) {
-    return [];
-  }
   
   // 获取所有代币
   const allCoins = await suiClient.getAllCoins({
