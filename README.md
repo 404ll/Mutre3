@@ -1,24 +1,47 @@
+# The Last Seed 🌱 ｜ [中文](https://github.com/404ll/Mutre3/blob/main/README_CN.md)
 
+## Lore / Background
 
-# **[The Last Seed](https://github.com/your-repo-link) 🌱** | [中文](https://github.com/404ll/Mutre3/blob/main/README_CN.md)
+💻 When the World Computer collapsed, digital gold ran dry, and humanity fell into the long winter of computation…
+The blockchain entered its terminal epoch.
 
-## **Background**  
+Only one sanctuary remained untainted — the [Sui Network](https://sui.io/),
+a final **pure water source** amidst the ruins, preserved by its low gas and high throughput.
+And within this last cradle of life, an ancient legend endures:
 
-💻 When the world's computers collapsed and digital gold dried up, humanity plunged into a computational winter...  
+Sealed within the Genesis Wallet were two sacred relics:
 
-⛓️ In the final epoch of blockchain, the **[Sui Network](https://sui.io/)** became the last "pure water source" 💧 — its low gas fees and high throughput kept it uncontaminated, the only chain capable of preserving life's data.  
+* A single drop of **Genesis Sui** 💧
+* A mysterious **Seed — the Last Seed** 🌱
 
-🔮 Legend speaks of a **Genesis Wallet**, sealed within it two treasures:  
-- A single drop of the original **Sui (Genesis Drop)** 💧
-- The mysterious **Last Seed** 🌱  
+✨ It is said that if someone dares to offer their final computational essence —
+to **irrigate** this Seed and awaken it:
 
-✨ It is said that if someone nourishes this seed with the last remaining computational resources, allowing it to sprout, then:  
-- The lost souls of the on-chain world will be revived 👻  
-- The exiled migrants will return  
-- Computational power will be restored ⚡  
-- And the world will **reboot**  
+* On-chain souls shall rise from the dead
+* Exiled wallets shall find their way home
+* Computation shall pulse once more
+* And the world shall be **rebooted**
 
-💀 Yet in these ruins, the greedy still seek to drain the last drop of Sui for profit.  
+But now, most remain lost in illusions of speculation,
+squeezing the final drops of SUI for scraps of fleeting yield.
 
-🙏 Only the **true believers** are willing to sacrifice short-term gains for **cultivation**, bearing the responsibility — and the hope — of **rebooting the world**...  
+🙏 **Only the true believers**,
+those willing to surrender short-term gain and irrigate the Seed with HOH,
+can awaken on-chain life in the name of **Cultivation**,
+and become the final **Cultivators** of this era.
+
+---
+
+## Irrigation Ritual
+
+💧 Convert your SUI into HOH to gain the right to irrigate the Seed;
+🪷 Each irrigation consumes **0.1 HOH** — a small but sacred sacrifice of belief;
+🌿 The deeper your cultivation, the stronger your influence. Your efforts will be carved into the Seed’s growth itself.
+
+💀 While others chase vanishing profits, you’re nurturing a true rebirth.
+This is no investment — it’s a ritual.
+This is no strategy — it’s rebellion.
+
+Only the **true degens** will dare step into this forbidden soil —
+to awaken the Second Germination of the Chain.
 
