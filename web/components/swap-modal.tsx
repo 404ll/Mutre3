@@ -146,7 +146,7 @@ export const SwapModal = ({ isOpen, onClose, onSwapToHOH, onSwapToSUI,address }:
                   <div className="flex items-center space-x-3 bg-blue-900/20 border border-blue-500/30 rounded-lg p-3 focus-within:ring-2 focus-within:ring-blue-500/50 transition-all duration-200">
                     <div className="flex-shrink-0 h-8 w-6 relative">
                       <Image
-                        src={swapDirection === "toHOH" ? "/logo/sui-logo.jpg " : "/logo/Mutr3.png"}
+                        src={swapDirection === "toHOH" ? "/logo/sui-logo.jpg" : "/logo/Mutr3.png"}
                         alt={swapDirection === "toHOH" ? "SUI" : "HOH"}
                         fill
                         className="object-cover"
